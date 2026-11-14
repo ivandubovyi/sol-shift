@@ -39,3 +39,11 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 
 - **How to play intro.** An AI assistant wrote the three intro screens: the words in `data/intro.js` and the code in `js/intro.js`. It also connected them to the start screen and footer in `index.html` and `js/ui.js`, and added the styles in `css/style.css`. The small drawings are SVG shapes written in code. No images were generated.
 - **Tests and docs.** The AI assistant added intro checks to `tools/playtest.js` and an intro section to `README.md`.
+
+## Milestone 4 (Nov 15, 2026)
+
+- **Look and feel.** An AI assistant redesigned the game screen around a Mars outpost picture. It wrote `js/scene.js` (the picture, drawn with SVG shapes in code) and `js/sound.js` (short tones made in code, off by default). It also rewrote `css/style.css` and updated `index.html` and `js/ui.js` for the gauges, the sol title, the card animations and the mission report end screen.
+- **No generated images or sounds.** There are no image files, no AI-generated pictures, no sound files and no NASA logos. Every shape and tone is written in code.
+- **Fact check.** The AI assistant opened a NASA JPL news page and a NASA Science page about Curiosity's blue sunset, and added a verified `marsSunsetBlue` entry to `data/numbers.js`, used on the evening card.
+- **Game rules unchanged.** No balance numbers were changed. The evening card's clock label and its new fact line are wording changes only.
+- **Tests and docs.** The AI assistant added checks to `tools/playtest.js` and a scene section to `README.md`.

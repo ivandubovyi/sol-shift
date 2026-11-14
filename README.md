@@ -38,6 +38,34 @@ The first time someone opens the game, three short "How to play" screens come be
 - Lines with real facts point at verified entries in `data/numbers.js` and show the source link. The tired-crew line has `fatigueOnly: true`, so it disappears when the fatigue switch is off.
 - To see the intro again on your own computer as a first-time visitor, clear the site data or run `localStorage.removeItem("solShift.introSeen")` in the browser console.
 
+## The outpost scene
+
+The picture at the top of the game screen is drawn in code by `js/scene.js` (SVG shapes, no image files, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game.
+
+| What happens in the game | What the picture shows |
+|---|---|
+| Day phase | Dusty, rust-tinted sky, Sun high, crew working outside |
+| Evening card | The Sun at the horizon with a blue glow around it (real: see `marsSunsetBlue` in `data/numbers.js`) |
+| Night card (like the 3 a.m. pump fault) | Dark sky, stars, amber alarm glow, roof beacon, crew asleep in the lit window |
+| Crew getting tired / very tired (fatigue on) | Crew outside slumps; when very tired they shut their eyes and yawn |
+| Storm shelter chosen | A shield dome over the habitat, crew inside the window |
+| Real solar flare card | One soft flash, a bright ring around the Sun, pink-tinted sky |
+| Real particle storm card | Same, plus fast streaks across the sky |
+| "Leave the dust", dust cloud cards | Dust pattern on the solar panels, dusty haze |
+| Greenhouse lights off (several cards) | Dark greenhouse, dull plants |
+| A question to Earth is waiting | The dish sends signal waves until the answer arrives |
+| Fatigue switched off | No sleeping, slumping or yawning: the crew is just "inside" at night |
+
+Choice-driven picture changes are listed per choice in `data/events.js` as `scene: { panelsDusty: 1 }` and so on. They only change the drawing.
+
+Motion: the sky fades between day, sunset and night; the crew bobs while working; new cards slide in; gauges slide and show "+5" or "-12"; each new sol shows a "Sol 4" title with its May 2024 space weather date. Anyone whose computer asks for reduced motion gets no movement and no flash (the flare never strobes for anyone: one soft flash at most). The picture has a short text alternative, and everything it shows is also in the text.
+
+Sound: off by default. The Sound button in the top bar turns on short tones made in code (choice click, night alarm, message from Earth, solar event, win, lose). No sound files.
+
+Gauges: each meter has a drawn icon, a sliding bar and a number. When a meter is low it turns red, gets stripes and a "Low" tag, so the warning never depends on color alone.
+
+The end screen is a mission report: a stamp, the sol reached, a chart of the three meters over the mission, what used the meter up, and the real science with its source.
+
 ## How a sol works
 
 1. **Day.** Sometimes a card appears first: a real solar event from the NASA data, a random event, or an answer from Earth. Then you plan the work day: short shift, full shift or overtime. More work makes more power, life support and shielding, and makes the crew more tired. Each plan shows its chance of a repair mistake.
@@ -103,6 +131,8 @@ index.html              the page. Loads the data files, then the engine, then th
 css/style.css           all the styles. Colors are variables at the top
 js/engine.js            the game rules. Knows nothing about the web page, so it can be tested in Node
 js/ui.js                draws the screen and handles button presses
+js/scene.js             the Mars outpost picture, drawn with SVG in code (no image files)
+js/sound.js             tiny sound effects made in code with Web Audio (off until turned on)
 js/intro.js             the How to play screens
 data/intro.js           the How to play words
 data/numbers.js         EVERY game number, with kind, status and source
@@ -159,6 +189,7 @@ Real facts used, all checked on 2026-11-14 or 2026-11-15:
 - Gale Crater air: nights about minus 70 C, days about 0 C (Curiosity, Aug 2012 to Feb 2013): [NASA photojournal PIA16913](https://science.nasa.gov/photojournal/steady-temperatures-at-mars-gale-crater)
 - Surface radiation 0.67 mSv per day (Curiosity RAD, Aug 2012 to Jun 2013): [NASA news release](https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/)
 - Sleep 5.98 h in step vs 4.91 h out of step with the Mars day (Phoenix team): [Barger et al. 2012, Sleep 35(10)](https://experts.arizona.edu/en/publications/learning-to-live-on-a-mars-day-fatigue-countermeasures-during-the/)
+- Mars sunsets look blue near the Sun (Curiosity, 15 April 2015): [NASA JPL news](https://www.jpl.nasa.gov/news/nasas-curiosity-rover-views-serene-sundown-on-mars/). The game's day and night sky colors are artistic choices, not measurements.
 - Solar flares and particle events, May 2024: [NASA DONKI](https://ccmc.gsfc.nasa.gov/tools/DONKI/), a saved snapshot, not live. Sol 1 replays 1 May 2024. The events were measured near Earth; placing them over a Mars base is a game simplification, and the game says so.
 
 ## Balance and testing
