@@ -45,7 +45,7 @@
           <li><span class="dot dot-power"></span><strong>Power:</strong> electricity from solar panels.</li>
           <li><span class="dot dot-shield"></span><strong>Shielding:</strong> protection from radiation, invisible energy from the Sun and space that can harm the body.</li>
         </ul>
-        <p>And watch your crew. Tired people make more mistakes, and mistakes cost life support.</p>
+        <p id="intro-fatigue">And watch your crew. Tired people make more mistakes, and mistakes cost life support.</p>
         <button class="btn btn-primary" id="start-button" type="button">Start the mission</button>
         <button class="btn btn-quiet" type="button" data-open-sources>Where do the facts come from?</button>
       </div>
@@ -62,7 +62,7 @@
         </div>
 
         <!-- The crew: tiredness is hidden, shown as a face and words -->
-        <div class="panel crew">
+        <div class="panel crew" id="crew-panel">
           <h2 class="panel-title">Crew</h2>
           <div class="crew-row">
             <svg id="crew-face" class="face" viewBox="0 0 100 100" role="img" aria-label="Crew face"></svg>

@@ -8,6 +8,9 @@
   "factKey" points at a VERIFIED entry in numbers.js. The end screen shows
   that entry's source link. If the entry is not verified, the end screen
   says "Source pending" instead.
+
+  "noFatigue" (optional) replaces the words when fatigueEnabled is false in
+  numbers.js, so the end screen never talks about sleep in a game without it.
 */
 
 var SOL_SHIFT_OUTCOMES = {
@@ -16,7 +19,12 @@ var SOL_SHIFT_OUTCOMES = {
     title: "Life support ran out",
     text: "The base ran short of air, water and food, so the crew had to leave Mars early. In this game, every repair mistake costs life support, and tired crews make more mistakes. Sleep is a resource too.",
     factKey: "sleepOutOfStepHours",
-    factText: "Real research: on the Phoenix Mars Lander team, people slept about 6 hours when their body clocks matched the Mars day, and under 5 hours when they did not."
+    factText: "Real research: on the Phoenix Mars Lander team, people slept about 6 hours when their body clocks matched the Mars day, and under 5 hours when they did not.",
+    noFatigue: {
+      text: "The base ran short of air, water and food, so the crew had to leave Mars early. Repair mistakes and broken machines cost life support, and help from Earth takes time to arrive.",
+      factKey: "signalDelayMaxMinutes",
+      factText: "Real fact: a message between Earth and Mars takes about 4 to 24 minutes each way, so the crew has to solve many problems on their own."
+    }
   },
 
   power: {
@@ -37,7 +45,12 @@ var SOL_SHIFT_OUTCOMES = {
     title: "Mission complete",
     text: "Your crew made it through all 30 sols. You kept the base running and kept the crew rested enough to do careful work.",
     factKey: "solDriftMinutes",
-    factText: "Real fact: a Mars day is about 40 minutes longer than an Earth day, so living on Mars means looking after your body clock."
+    factText: "Real fact: a Mars day is about 40 minutes longer than an Earth day, so living on Mars means looking after your body clock.",
+    noFatigue: {
+      text: "Your crew made it through all 30 sols and a month of real solar storms. You kept the base running by choosing the right work each day.",
+      factKey: "solLengthHours",
+      factText: "Real fact: one Mars day, called a sol, is about 24 hours and 39 minutes long."
+    }
   }
 };
 

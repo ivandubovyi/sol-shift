@@ -130,6 +130,9 @@
   }
 
   function renderCrew() {
+    // FATIGUE MODULE: no crew panel when the sleep part of the game is switched off.
+    $("crew-panel").hidden = !E.fatigueOn(game);
+    if (!E.fatigueOn(game)) { return; }
     var status = E.crewStatus(game);
     drawFace($("crew-face"), status.level);
     $("crew-face").setAttribute("aria-label", status.text);
@@ -331,6 +334,10 @@
   function renderEnd() {
     var key = game.outcome === "won" ? "won" : game.cause;
     var words = DATA.outcomes[key];
+    // FATIGUE MODULE: use the no-sleep wording when fatigue is switched off.
+    if (!E.fatigueOn(game) && words.noFatigue) {
+      words = Object.assign({ title: words.title }, words.noFatigue);
+    }
     $("end-sol").textContent = game.outcome === "won"
       ? "All 30 sols"
       : "Mission ended on sol " + game.sol;
@@ -387,6 +394,9 @@
   $("sources-back").addEventListener("click", function () {
     showScreen(screenBeforeSources);
   });
+
+  // FATIGUE MODULE: hide the crew sentence on the start screen when fatigue is off.
+  $("intro-fatigue").hidden = DATA.numbers.fatigueEnabled.value !== true;
 
   // Demo shortcut: index.html?demo=pump skips the start screen.
   if (demo === "pump") {

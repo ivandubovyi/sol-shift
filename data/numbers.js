@@ -95,6 +95,22 @@ var SOL_SHIFT_NUMBERS = {
     note: "Same study: 4.91 h main sleep when out of step. Checked in the abstract 2026-11-14."
   },
 
+  galeNightLowC: {
+    value: -70, unit: "degrees Celsius", kind: "real-world", status: "verified",
+    source: "https://science.nasa.gov/photojournal/steady-temperatures-at-mars-gale-crater",
+    display: "about minus 70 degrees Celsius (minus 94 Fahrenheit)",
+    label: "Night air temperature at Gale Crater, Mars",
+    note: "NASA photojournal PIA16913, 'Steady Temperatures at Mars' Gale Crater': lows about minus 94 F (minus 70 C), mid-August 2012 to late February 2013, Curiosity REMS. Checked 2026-11-15."
+  },
+
+  galeDayHighC: {
+    value: 0, unit: "degrees Celsius", kind: "real-world", status: "verified",
+    source: "https://science.nasa.gov/photojournal/steady-temperatures-at-mars-gale-crater",
+    display: "about 0 degrees Celsius (32 Fahrenheit)",
+    label: "Daytime air temperature at Gale Crater, Mars",
+    note: "Same NASA page: daily highs about 32 F (0 C), same period. Checked 2026-11-15."
+  },
+
   // Derived from the two sleep numbers above: 1 - 4.91 / 5.98 = 0.179.
   // The game uses it as "how much less rest a fully out-of-step crew gets".
   // Using a lab sleep number as a game rest number is a game simplification.
@@ -110,6 +126,18 @@ var SOL_SHIFT_NUMBERS = {
   // GAME-DESIGN NUMBERS (kind "game-design", status "placeholder")
   // These are balance choices, tuned by playtesting. Not NASA facts.
   // =====================================================================
+
+  // ---------- THE FATIGUE SWITCH ----------
+  // true  = the full game: hidden crew tiredness, body clock drift, bedtime
+  //         choices, short/full/overtime shifts, and the sleep event cards.
+  // false = the same game without any of that: three meters, real NASA solar
+  //         storms, messages from Earth, and "focus" work plans instead.
+  // Everything that depends on it is marked "FATIGUE MODULE" in js/engine.js,
+  // and the sleep cards in data/events.js have fatigue: true.
+  fatigueEnabled: {
+    value: true, unit: "on or off", kind: "game-design", status: "placeholder", source: null,
+    note: "Turns the crew sleep part of the game on or off."
+  },
 
   missionLengthSols: {
     value: 30, unit: "sols", kind: "game-design", status: "placeholder", source: null,
@@ -184,6 +212,28 @@ var SOL_SHIFT_NUMBERS = {
     note: "Gets more done, makes the crew much more tired."
   },
 
+  // ---------- Work plans used when fatigueEnabled is false ----------
+  // With no tiredness, longer shifts would have no cost. So instead the crew
+  // picks what to focus on, and each focus helps one meter most.
+
+  focusPlanGreenhouse: {
+    value: { label: "Greenhouse day", lifeSupport: 12, power: 4, shielding: 1 },
+    unit: "points", kind: "game-design", status: "placeholder", source: null,
+    note: "Grow food and clean air."
+  },
+
+  focusPlanPanels: {
+    value: { label: "Solar panel day", lifeSupport: 3, power: 18, shielding: 1 },
+    unit: "points", kind: "game-design", status: "placeholder", source: null,
+    note: "Clean and fix the solar panels."
+  },
+
+  focusPlanShield: {
+    value: { label: "Shield repair day", lifeSupport: 3, power: 4, shielding: 9 },
+    unit: "points", kind: "game-design", status: "placeholder", source: null,
+    note: "Repair the outer radiation shield."
+  },
+
   // ---------- Sleep and the body clock ----------
 
   nightRest: {
@@ -230,7 +280,7 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   clockMistakeWeight: {
-    value: 0.15, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
+    value: 0.25, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
     note: "How much an out-of-step body clock adds to the mistake chance."
   },
 
@@ -245,7 +295,7 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   mistakeLifeSupportCost: {
-    value: 15, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    value: 12, unit: "points", kind: "game-design", status: "placeholder", source: null,
     note: "Life support lost when a repair goes wrong."
   },
 
@@ -267,7 +317,7 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   particleStormShieldingHit: {
-    value: 20, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    value: 25, unit: "points", kind: "game-design", status: "placeholder", source: null,
     note: "Shielding lost if the crew keeps working through a solar particle storm day."
   },
 

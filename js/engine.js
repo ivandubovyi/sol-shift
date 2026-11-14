@@ -20,6 +20,10 @@
 
   All numbers come from data/numbers.js. All event words come from
   data/events.js. This file holds rules only.
+
+  THE FATIGUE SWITCH: fatigueEnabled in data/numbers.js turns the crew sleep
+  part of the game on or off. Every place that depends on it is marked
+  "FATIGUE MODULE" below, so it is easy to find, change or remove.
 */
 
 var SolShiftEngine = (function () {
@@ -101,8 +105,16 @@ var SolShiftEngine = (function () {
     }
   }
 
+  // FATIGUE MODULE: is the crew sleep part of the game switched on?
+  function fatigueOn(game) {
+    return num(game, "fatigueEnabled") === true;
+  }
+
   // Tiredness is hidden: 0 = fully rested, 100 = exhausted.
+  // FATIGUE MODULE: with fatigue off, tiredness never changes and stays 0,
+  // so mistake chances stay at the base rate and work output stays full.
   function changeTired(game, amount) {
+    if (!fatigueOn(game)) { return; }
     game.tired = clamp(game.tired + amount, 0, 100);
   }
 
@@ -120,7 +132,7 @@ var SolShiftEngine = (function () {
 
   // Describe effects for a button, for example "Power -14, Shielding -3".
   // Tiredness is hidden, so it is described in words instead of a number.
-  function describeEffects(effects) {
+  function describeEffects(game, effects) {
     if (!effects) { return []; }
     var parts = [];
     METERS.forEach(function (meter) {
@@ -129,8 +141,10 @@ var SolShiftEngine = (function () {
         parts.push(METER_NAMES[meter] + " " + sign + effects[meter]);
       }
     });
-    if (effects.tired > 0) { parts.push("Crew gets more tired"); }
-    if (effects.tired < 0) { parts.push("Crew gets some rest"); }
+    if (fatigueOn(game)) { // FATIGUE MODULE
+      if (effects.tired > 0) { parts.push("Crew gets more tired"); }
+      if (effects.tired < 0) { parts.push("Crew gets some rest"); }
+    }
     return parts;
   }
 
@@ -237,6 +251,7 @@ var SolShiftEngine = (function () {
     // Which events are allowed right now?
     var allowed = game.data.events.filter(function (ev) {
       if (ev.phase !== phase) { return false; }
+      if (ev.fatigue && !fatigueOn(game)) { return false; } // FATIGUE MODULE: sleep cards only when fatigue is on
       if (game.sol < ev.minSol) { return false; }
       var last = game.lastSeen[ev.id];
       if (last !== undefined && game.sol - last < ev.cooldown) { return false; }
@@ -307,7 +322,7 @@ var SolShiftEngine = (function () {
     };
     METERS.forEach(function (m) { game.meters[m] = num(game, "meterStart"); });
 
-    if (options.demo === "pump") {
+    if (options.demo === "pump" && fatigueOn(game)) { // the pump fault is a FATIGUE MODULE card
       startPumpDemo(game);
     } else {
       addLog(game, "Sol 1. The crew wakes up in the new Mars base.");
@@ -418,8 +433,16 @@ var SolShiftEngine = (function () {
   // What the player sees: the current card turned into words and buttons
   // ---------------------------------------------------------------------
 
+  // The three work plans the player can pick from.
+  // FATIGUE MODULE: with fatigue on, the plans are about HOW LONG to work
+  // (longer = more done, more tired). With fatigue off, they are about WHAT
+  // to work on, because longer shifts would have no cost.
   function workPlans(game) {
-    return [num(game, "workPlanShort"), num(game, "workPlanFull"), num(game, "workPlanOvertime")];
+    if (fatigueOn(game)) {
+      return [num(game, "workPlanShort"), num(game, "workPlanFull"), num(game, "workPlanOvertime")];
+    }
+    return [num(game, "focusPlanGreenhouse"), num(game, "focusPlanPanels"), num(game, "focusPlanShield")]
+      .map(function (plan) { return Object.assign({ hours: 8, tired: 0 }, plan); });
   }
 
   // Returns { kind, clock, title, text, learn, factKey, choices: [{ label, detail }] }
@@ -438,16 +461,18 @@ var SolShiftEngine = (function () {
       }
       return {
         kind: "work", clock: "08:00", title: "Plan the work day",
-        text: "How long should the crew work today? More work keeps the base running. It also makes the crew more tired.",
+        text: fatigueOn(game)
+          ? "How long should the crew work today? More work keeps the base running. It also makes the crew more tired."
+          : "What should the crew work on today? Each job helps one part of the base the most.",
         choices: workPlans(game).map(function (plan) {
           var output = workOutput(game);
-          var parts = describeEffects({
+          var parts = describeEffects(game, {
             power: Math.round(plan.power * output),
             lifeSupport: Math.round(plan.lifeSupport * output),
             shielding: Math.round(plan.shielding * output)
           });
           return {
-            label: plan.label + " (" + plan.hours + " hours)",
+            label: fatigueOn(game) ? plan.label + " (" + plan.hours + " hours)" : plan.label,
             detail: "Makes " + parts.join(", ") + ". Chance of a repair mistake: " + percent(mistakeChance(game, plan.hours)) + "."
           };
         })
@@ -455,6 +480,14 @@ var SolShiftEngine = (function () {
     }
 
     if (card.type === "sleep") {
+      // FATIGUE MODULE: with fatigue off there is no bedtime choice, just the night.
+      if (!fatigueOn(game)) {
+        return {
+          kind: "sleep", clock: "22:00", title: "Night",
+          text: "The Sun has set and the crew goes to sleep. Mars nights are very cold, so the heaters use power.",
+          choices: [{ label: "Good night", detail: "Power -" + num(game, "nightPowerUse") + " for the heaters." }]
+        };
+      }
       var drift = num(game, "solDriftMinutes");
       return {
         kind: "sleep", clock: "22:00", title: "Bedtime",
@@ -473,7 +506,7 @@ var SolShiftEngine = (function () {
         kind: "message", clock: null, title: card.title,
         text: card.text,
         note: "You asked on sol " + card.sentSol + ". Each message takes 4 to 24 minutes to cross space, and mission control needed time to work out the answer.",
-        choices: [{ label: "Do what Earth says", detail: describeEffects(card.effects).join(", ") || "No meter changes." }]
+        choices: [{ label: "Do what Earth says", detail: describeEffects(game, card.effects).join(", ") || "No meter changes." }]
       };
     }
 
@@ -497,7 +530,7 @@ var SolShiftEngine = (function () {
       kind: "event", clock: card.clock, title: card.title, text: card.text,
       learn: card.learn, factKey: card.factKey,
       choices: ev.choices.map(function (c) {
-        var parts = describeEffects(c.effects);
+        var parts = describeEffects(game, c.effects);
         if (c.repair) { parts.push("Repair now: " + percent(mistakeChance(game, 8)) + " chance of a mistake (Life support -" + num(game, "mistakeLifeSupportCost") + ")"); }
         if (c.extraRiskTomorrow) { parts.push("Tomorrow's repair mistake chance +" + percent(c.extraRiskTomorrow)); }
         if (c.askEarth) { parts.push("Earth's answer comes in about " + num(game, "earthReplyPhases") / 2 + " sol"); }
@@ -605,6 +638,10 @@ var SolShiftEngine = (function () {
   }
 
   function doNight(game, index) {
+    if (!fatigueOn(game)) { // FATIGUE MODULE: no body clock, no bedtime choice
+      changeMeter(game, "power", -num(game, "nightPowerUse"), "Heaters at night");
+      return;
+    }
     if (index === 0) {
       game.driftMinutes += num(game, "solDriftMinutes");
     } else {
@@ -626,6 +663,8 @@ var SolShiftEngine = (function () {
     getPrompt: getPrompt,
     choose: choose,
     crewStatus: crewStatus,
+    fatigueOn: fatigueOn,
+    workPlans: workPlans,
     mistakeChance: mistakeChance,
     outOfStep: outOfStep,
     formatMinutes: formatMinutes,
