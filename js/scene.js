@@ -115,6 +115,11 @@ var SolShiftScene = (function () {
     radial(defs, P + "window-light", "#FFC46B", 0.7);
     radial(defs, P + "alarm-light", "#FF6B4A", 0.75);
     radial(defs, P + "gh-glow", "#9be38a", 0.8);
+    radial(defs, P + "torch-pool", "#ffe2a0", 0.75);
+    // The torch cone: about 35 percent bright at the torch, fading to nothing.
+    var cone = add(defs, "linearGradient", { id: P + "torch-cone", gradientUnits: "userSpaceOnUse", x1: 283, y1: 281, x2: 268, y2: 320 });
+    add(cone, "stop", { offset: "0", "stop-color": "#ffe9b8", "stop-opacity": "0.35" });
+    add(cone, "stop", { offset: "1", "stop-color": "#ffe9b8", "stop-opacity": "0" });
     var hatch = add(defs, "pattern", { id: P + "dust-hatch", width: 5, height: 5, patternUnits: "userSpaceOnUse", patternTransform: "rotate(35)" });
     add(hatch, "rect", { width: 5, height: 5, fill: "#b07a4f", opacity: "0.6" });
     add(hatch, "line", { x1: 0, y1: 0, x2: 0, y2: 5, stroke: "#7c4a2a", "stroke-width": 2.5 });
@@ -155,6 +160,25 @@ var SolShiftScene = (function () {
     add(svg, "path", { d: GROUND_FG, "class": "ground" });
     add(svg, "ellipse", { cx: 384, cy: 300, rx: 125, ry: 13, "class": "mound" });   // the small rise under the habitat
 
+    // --- Ground details: low dune lines, tracks to the door, a power cable,
+    //     small rocks and the pump hatch. Kept quiet on purpose. ---
+    var details = group(svg, "ground-details");
+    ["M110 318 Q220 309 330 316", "M420 324 Q540 314 690 321", "M150 338 Q300 330 450 336", "M480 342 Q600 334 700 339"].forEach(function (d) {
+      add(details, "path", { d: d, "class": "dune-line" });
+    });
+    // two lines of boot and wheel tracks coming in from the front to the door
+    add(details, "path", { d: "M250 380 Q268 340 296 300", "class": "track" });
+    add(details, "path", { d: "M262 380 Q279 342 305 300", "class": "track" });
+    // power cable from the solar panels to the airlock
+    add(details, "path", { d: "M238 289 Q262 299 289 295", "class": "cable" });
+    // the pump hatch on the ground beside the door
+    add(details, "rect", { x: 260, y: 315, width: 20, height: 6, rx: 2, "class": "hatch" });
+    // small rocks, each with a soft shadow
+    [[176, 326, 7], [338, 330, 5], [452, 320, 6], [520, 338, 8], [640, 327, 6], [600, 348, 9], [150, 346, 8], [420, 352, 7]].forEach(function (r) {
+      contactShadow(details, r[0] + 1, r[1] + 0.5, r[2] * 1.2);
+      add(details, "path", { d: "M" + (r[0] - r[2]) + " " + r[1] + " q" + (r[2] * 0.5) + " " + (-r[2] * 0.9) + " " + r[2] + " " + (-r[2] * 0.85) + " q" + (r[2] * 0.7) + " 0.1 " + r[2] + " " + (r[2] * 0.85) + " Z", "class": "rock-fg" });
+    });
+
     // Warm light from the habitat windows, and the red alarm light, spilling onto the ground.
     add(svg, "ellipse", { cx: 385, cy: 304, rx: 160, ry: 30, fill: "url(#" + P + "window-light)", "class": "window-spill" });
     add(svg, "ellipse", { cx: 330, cy: 306, rx: 120, ry: 28, fill: "url(#" + P + "alarm-light)", "class": "alarm-spill" });
@@ -192,7 +216,7 @@ var SolShiftScene = (function () {
     add(gh, "line", { x1: 508, y1: 251, x2: 508, y2: 288, "class": "gh-frame" });
 
     // --- Comm dish: furthest back on the right ---
-    var dish = group(svg, "dish");
+    var dish = group(svg, "dish", "translate(-20 0)");   // pulled in a little so phones see all of it
     contactShadow(dish, 586, 289, 12);
     add(dish, "line", { x1: 586, y1: 288, x2: 586, y2: 257, "class": "dish-mast" });
     add(dish, "path", { d: "M569 254 Q586 268 605 244 Z", "class": "dish-bowl" });
@@ -229,23 +253,26 @@ var SolShiftScene = (function () {
     // --- Crew outside: three stylized astronauts (not real people) ---
     // Each has one color stripe matching a meter: teal, amber, violet.
     var crew = group(svg, "crew-outside");
-    makeAstronaut(crew, 252, 299, "kneel", "stripe-life", true);    // brushing dust off the panels
+    makeAstronaut(crew, 270, 300, "kneel", "stripe-life", true);    // brushing dust off the panels
     makeAstronaut(crew, 470, 299, "carry", "stripe-power", false);  // carrying a crate
-    makeAstronaut(crew, 556, 299, "point", "stripe-shield", false); // pointing at the dish
+    makeAstronaut(crew, 542, 300, "point", "stripe-shield", false); // pointing at the dish
 
     // The night watch: one crew member at the door with a torch during an alarm.
+    // They stand just in front of the door and point the torch down at the
+    // pump hatch on the ground: a soft warm cone that fades out, and a small
+    // pool of light where it lands. It stays below the solar panels.
     var watch = group(svg, "night-watch");
-    add(watch, "path", { d: "M292 268 L238 252 L238 292 Z", "class": "torch-beam" });
-    makeAstronaut(watch, 302, 297, "torch", "stripe-life", true);
+    add(watch, "path", { d: "M283 281 L259 318 L280 320 Z", fill: "url(#" + P + "torch-cone)", "class": "torch-beam" });
+    add(watch, "ellipse", { cx: 270, cy: 319, rx: 15, ry: 4, fill: "url(#" + P + "torch-pool)", "class": "torch-pool" });
+    makeAstronaut(watch, 300, 315, "torch", "stripe-life", true);
 
     // --- Weather overlays (on top) ---
     add(svg, "rect", Object.assign({}, BIG, { "class": "dust-haze" }));
     add(svg, "rect", Object.assign({}, BIG, { "class": "storm-haze" }));
     add(svg, "rect", Object.assign({}, BIG, { "class": "flare-flash" }));
 
-    // A few dark rocks in the foreground, in front of the base.
-    add(svg, "path", { d: "M214 318 q6 -8 16 -7 q9 1 12 7 Z", "class": "rock-fg" });
-    add(svg, "path", { d: "M584 316 q5 -7 13 -6 q8 1 10 6 Z", "class": "rock-fg" });
+    // A darker lip of ground along the bottom, to frame the shot.
+    add(svg, "path", { d: "M-1500 352 L120 352 Q300 340 420 347 T700 344 L2500 344 L2500 2500 L-1500 2500 Z", "class": "ground-lip" });
 
     // The short text alternative for screen readers.
     svg.setAttribute("role", "img");
@@ -340,9 +367,13 @@ var SolShiftScene = (function () {
   // The helmet has a dark visor with one highlight dot. When the crew is
   // exhausted, a small yawn shows in the visor and the body slumps.
   // ---------------------------------------------------------------------
+  // The crew is drawn a little larger than life next to the buildings, so
+  // they read clearly on a phone.
+  var CREW_SCALE = 1.15;
+
   function makeAstronaut(parent, x, groundY, pose, stripe, faceLeft) {
     var outer = group(parent, "astronaut pose-" + pose,
-      "translate(" + x + " " + groundY + ")" + (faceLeft ? " scale(-1 1)" : ""));
+      "translate(" + x + " " + groundY + ") scale(" + (faceLeft ? -CREW_SCALE : CREW_SCALE) + " " + CREW_SCALE + ")");
     var body = group(outer, "astro-body");
     var kneel = pose === "kneel";
     var lift = kneel ? 7 : 0;   // a kneeling body sits lower

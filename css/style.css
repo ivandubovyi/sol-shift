@@ -592,6 +592,18 @@ details[open] .learn-label::before { content: "\2212"; }
 .mound { fill: #844128; transition: fill 1.4s ease; }
 .rock-fg { fill: #4A2214; transition: fill 1.4s ease; }
 .contact-shadow { fill: #000; opacity: 0.25; }
+
+/* Ground details: quiet lines a shade darker than the ground */
+.dune-line { fill: none; stroke: #6a3019; stroke-width: 1.2; opacity: 0.55; transition: stroke 1.4s ease; }
+.track { fill: none; stroke: #5e2a17; stroke-width: 2; stroke-dasharray: 3 3; opacity: 0.5; transition: stroke 1.4s ease; }
+.cable { fill: none; stroke: #2d2a2e; stroke-width: 1.2; opacity: 0.8; }
+.hatch { fill: #4d4f57; stroke: #2d2a2e; stroke-width: 0.8; }
+.ground-lip { fill: #64301b; transition: fill 1.4s ease; }
+.is-dusk .dune-line, .is-dusk .track { stroke: #2a1714; }
+.is-dusk .ground-lip { fill: #321c19; }
+.is-night .dune-line, .is-night .track { stroke: #170d0b; }
+.is-night .ground-lip { fill: #1d110e; }
+.is-night .hatch { fill: #2c2d33; }
 .is-dusk .ridge-far { fill: #5A3A4A; }
 .is-dusk .ridge-mid { fill: #4a2f35; }
 .is-dusk .ground, .is-dusk .mound { fill: #3E2420; }
@@ -706,7 +718,8 @@ details[open] .learn-label::before { content: "\2212"; }
 .crate { fill: #b9874f; stroke: #6e4a26; stroke-width: 0.9; }
 .crate-line { stroke: #6e4a26; stroke-width: 0.8; }
 .torch { fill: #3b3f4a; }
-.torch-beam { fill: #fff2c4; opacity: 0.32; }
+/* The torch: its color and fade come from a gradient in js/scene.js */
+.torch-beam, .torch-pool { opacity: 1; }
 .astro-body { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.6s ease; }
 /* Tired: the crew slumps. Exhausted: slumps further and yawns. (Fatigue on only.) */
 .crew-tired .crew-outside .astro-body { transform: rotate(5deg) translateY(1px); }

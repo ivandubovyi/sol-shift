@@ -54,3 +54,7 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **Code.** The AI assistant rewrote `js/scene.js` (closer camera, three land bands, a larger habitat, bigger astronauts with poses, night lighting, a night watch with a torch), `css/style.css` (full-screen layout, glass panels, system-font HUD type) and `index.html`, and updated `js/ui.js` (camera framing, menu, mission log drawer, full screen button). It shortened the text of the 3 a.m. pump fault card so it fits on a phone.
 - **No downloads, no generated images.** No fonts, images or sounds are downloaded or generated. Everything is drawn in code with system fonts.
 - **Game rules unchanged.** No balance numbers were changed; `tools/playtest.js` gives the same results as before.
+
+## Milestone 6 (Nov 15, 2026)
+
+- **Visual fixes.** An AI assistant (Claude) changed the code for three fixes the team asked for: the night-watch torch is now a soft warm cone aimed at a pump hatch on the ground, the empty ground got quiet detail (dune lines, tracks to the door, a power cable, small rocks, a darker front edge) and a lower horizon on wide screens, and the crew is drawn a little larger with a closer phone camera. All drawn in code; no images or fonts were added. No balance numbers were changed.

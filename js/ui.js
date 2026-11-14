@@ -103,6 +103,7 @@
   function updateCamera() {
     var w = window.innerWidth;
     var h = window.innerHeight;
+    if (!w || !h) { return; }   // the window has no size yet (for example while it is being resized)
     var side = window.matchMedia(SIDE_LAYOUT).matches;
     var units, fx, fy;   // units across the screen; where the habitat sits (0 to 1)
 
@@ -110,12 +111,12 @@
       if (side) {
         var panel = $("card").offsetWidth + 24;          // the side card and its margin
         var openWidth = Math.max(w - panel, w * 0.45);   // the part of the screen left for the picture
-        units = 440 * w / openWidth;
+        units = 400 * w / openWidth;
         fx = (openWidth / 2) / w;
-        fy = h < 520 ? 0.66 : 0.6;   // short screens: the habitat a bit lower, under the meters
+        fy = 0.66;   // a lower horizon: more sky, less empty ground
       } else {
         // Phones: the habitat sits between the top HUD and the bottom sheet.
-        units = 405;
+        units = 345;   // close enough that the crew is about 58 px tall on a 375 px phone
         var top = $("crew-panel").hidden ? $("meters").getBoundingClientRect().bottom : $("crew-panel").getBoundingClientRect().bottom;
         var sheetTop = $("card").getBoundingClientRect().top;
         var middle = top + (sheetTop - top) * 0.58;
@@ -125,7 +126,7 @@
     } else {
       // Title and other screens: the habitat in the middle, between the
       // title at the top and the buttons at the bottom.
-      units = side ? 640 : 400;
+      units = side ? 640 : 345;
       fx = 0.5;
       fy = 0.5;
     }
@@ -133,7 +134,9 @@
     var scale = w / units;      // screen pixels per scene unit
     var viewW = units;
     var viewH = h / scale;
-    scene.setCamera(395 - fx * viewW, 268 - fy * viewH, viewW, viewH);
+    var focusX = side ? 395 : 405;   // phones: centred between the panels and the dish
+    if (!isFinite(fy) || !isFinite(units)) { return; }   // panels not measured yet: keep the old camera
+    scene.setCamera(focusX - fx * viewW, 268 - fy * viewH, viewW, viewH);
   }
 
   window.addEventListener("resize", updateCamera);
