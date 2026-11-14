@@ -306,5 +306,36 @@ var oCareful = summary(dataOff, carefulOff, "careful (fatigue off) ");
 var oCareless = summary(dataOff, carelessOff, "careless (fatigue off)");
 check(oCareful.wins > 0 && oCareless.wins < RUNS, "fatigue off: the game can be won and lost");
 
+// ---------------------------------------------------------------------
+// 8. The How to play intro.
+// ---------------------------------------------------------------------
+console.log("\n== How to play intro ==");
+var INTRO = require(path.join(root, "data/intro.js"));
+var Intro = require(path.join(root, "js/intro.js"));
+check(INTRO.screens.length >= 1 && INTRO.screens.length <= 3, "intro has " + INTRO.screens.length + " screens (at most 3)");
+INTRO.screens.forEach(function (screen) {
+  screen.lines.forEach(function (line) {
+    // A line with a number in it is either a game rule or a fact with a verified source.
+    if (/\d/.test(line.text) && !line.gameRule) {
+      check(!!line.factKeys && line.factKeys.length > 0, "intro '" + screen.id + "': numbered line has a source: " + line.text.slice(0, 50));
+    }
+    (line.factKeys || []).forEach(function (key) {
+      var fact = data.numbers[key];
+      check(!!fact && fact.status === "verified", "intro '" + screen.id + "': fact " + key + " is verified");
+    });
+  });
+});
+// The sol length in the intro text matches the verified number.
+var solHours = data.numbers.solLengthHours.value;
+var solText = Math.floor(solHours) + " hours and " + Math.floor((solHours % 1) * 60) + " minutes";
+var allText = INTRO.screens.map(function (sc) { return sc.lines.map(function (l) { return l.text; }).join(" "); }).join(" ");
+check(allText.indexOf(solText) !== -1, "intro says the sol is \"" + solText + "\" (from solLengthHours " + solHours + ")");
+check(/\bsol\b/.test(allText) && /Life support/.test(allText) && /Power/.test(allText) && /Shielding/.test(allText) && /30 sols/.test(allText),
+  "intro explains sol, the three meters and the 30-sol goal");
+var tiredOn = INTRO.screens.some(function (sc) { return Intro.visibleLines(sc, true).some(function (l) { return /tired/i.test(l.text); }); });
+var tiredOff = INTRO.screens.some(function (sc) { return Intro.visibleLines(sc, false).some(function (l) { return /tired/i.test(l.text); }); });
+check(tiredOn, "fatigue on: intro has the tired-crew line");
+check(!tiredOff, "fatigue off: intro has no tired-crew line");
+
 console.log("\n" + (failures === 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED"));
 process.exitCode = failures === 0 ? 0 : 1;

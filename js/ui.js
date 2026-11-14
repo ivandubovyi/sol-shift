@@ -44,7 +44,7 @@
   // Screens
   // ---------------------------------------------------------------------
 
-  var SCREENS = ["start-screen", "game-screen", "end-screen", "sources-screen"];
+  var SCREENS = ["start-screen", "intro-screen", "game-screen", "end-screen", "sources-screen"];
 
   function showScreen(id) {
     SCREENS.forEach(function (s) { $(s).hidden = (s !== id); });
@@ -320,6 +320,32 @@
     p.appendChild(makeLink(sw.sourceUrl, "NASA DONKI"));
   }
 
+  // ---------------------------------------------------------------------
+  // How to play (the intro). The screens are drawn by js/intro.js.
+  // ---------------------------------------------------------------------
+
+  function openIntro() {
+    var visible = SCREENS.filter(function (s) { return !$(s).hidden; })[0] || "start-screen";
+    var returnTo = (visible === "intro-screen" || visible === "sources-screen") ? "start-screen" : visible;
+    showScreen("intro-screen");
+    SolShiftIntro.open({
+      intro: SOL_SHIFT_INTRO,
+      numbers: DATA.numbers,
+      fatigueOn: DATA.numbers.fatigueEnabled.value === true,
+      sourceLink: function (key) {
+        var entry = DATA.numbers[key];
+        if (!entry || entry.status !== "verified" || !entry.source) { return null; }
+        return makeLink(entry.source, sourceName(entry.source));
+      },
+      onClose: function () {
+        showScreen(returnTo);
+        // Put keyboard focus somewhere sensible after the intro closes.
+        var target = returnTo === "game-screen" ? document.querySelector("#choices button") : $("start-button");
+        if (target) { target.focus(); }
+      }
+    });
+  }
+
   function openSources() {
     var visible = SCREENS.filter(function (s) { return !$(s).hidden; })[0];
     if (visible !== "sources-screen") { screenBeforeSources = visible; }
@@ -391,6 +417,10 @@
     btn.addEventListener("click", openSources);
   });
 
+  document.querySelectorAll("[data-open-intro]").forEach(function (btn) {
+    btn.addEventListener("click", openIntro);
+  });
+
   $("sources-back").addEventListener("click", function () {
     showScreen(screenBeforeSources);
   });
@@ -398,8 +428,14 @@
   // FATIGUE MODULE: hide the crew sentence on the start screen when fatigue is off.
   $("intro-fatigue").hidden = DATA.numbers.fatigueEnabled.value !== true;
 
-  // Demo shortcut: index.html?demo=pump skips the start screen.
+  // What to show first:
+  //   ?demo=pump      straight into the pump fault (no intro, for the demo video)
+  //   ?seed=...       the start screen (no intro, for testing and recording)
+  //   first visit     the How to play intro
+  //   later visits    the start screen
   if (demo === "pump") {
     startGame({ seed: seedOption(), demo: "pump" });
+  } else if (seedParam === null && !SolShiftIntro.wasSeen()) {
+    openIntro();
   }
 })();

@@ -285,3 +285,30 @@ main { max-width: 1040px; margin: 0 auto; padding: 16px; }
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* ---------- How to play (intro) ---------- */
+
+.intro-panel h1:focus { outline: none; }
+.intro-panel h1:focus-visible { outline: 3px solid var(--mars-strong); outline-offset: 4px; border-radius: 4px; }
+
+.intro-art {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 4px 0 16px;
+}
+.intro-svg-label { fill: var(--text-muted); font-size: 13px; font-family: inherit; }
+.intro-bar-earth { fill: #6fa8dc; }
+.intro-bar-mars { fill: var(--mars); }
+.intro-bar-track { fill: var(--surface-3); }
+.intro-bar-life { fill: var(--meter-life); }
+.intro-bar-power { fill: var(--meter-power); }
+.intro-bar-shield { fill: var(--meter-shield); }
+.intro-earth { fill: #4f86c6; }
+.intro-mars { fill: var(--mars); }
+.intro-signal { stroke: var(--text-muted); stroke-width: 2; stroke-dasharray: 6 6; }
+
+.intro-lines p { font-size: 1.05rem; }
+.intro-lines .intro-source { font-size: 0.85rem; margin-top: -6px; }
+.intro-buttons { margin-top: 8px; }

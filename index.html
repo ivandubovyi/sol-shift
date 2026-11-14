@@ -47,7 +47,23 @@
         </ul>
         <p id="intro-fatigue">And watch your crew. Tired people make more mistakes, and mistakes cost life support.</p>
         <button class="btn btn-primary" id="start-button" type="button">Start the mission</button>
+        <button class="btn btn-quiet" type="button" data-open-intro>How to play</button>
         <button class="btn btn-quiet" type="button" data-open-sources>Where do the facts come from?</button>
+      </div>
+    </section>
+
+    <!-- HOW TO PLAY (the words are in data/intro.js, the code in js/intro.js) -->
+    <section id="intro-screen" class="screen" hidden aria-labelledby="intro-title">
+      <div class="panel intro intro-panel">
+        <p class="card-clock" id="intro-step"></p>
+        <h1 id="intro-title" tabindex="-1"></h1>
+        <!-- Decorative drawing. Everything it shows is also said in the text below. -->
+        <svg id="intro-art" class="intro-art" aria-hidden="true" focusable="false"></svg>
+        <div id="intro-lines" class="intro-lines"></div>
+        <div class="intro-buttons">
+          <button class="btn btn-primary" id="intro-next" type="button">Next</button>
+          <button class="btn btn-quiet" id="intro-skip" type="button">Skip</button>
+        </div>
       </div>
     </section>
 
@@ -138,6 +154,7 @@
   </main>
 
   <footer class="footer">
+    <button class="link-button" type="button" data-open-intro>How to play</button>
     <button class="link-button" type="button" data-open-sources>Sources</button>
     <span>Solar storms: NASA DONKI snapshot, May 2024. Not live data.</span>
     <span>Code written with AI help.</span>
@@ -148,7 +165,9 @@
   <script src="data/events.js"></script>
   <script src="data/outcomes.js"></script>
   <script src="data/space-weather.js"></script>
+  <script src="data/intro.js"></script>
   <script src="js/engine.js"></script>
+  <script src="js/intro.js"></script>
   <script src="js/ui.js"></script>
 </body>
 </html>

@@ -34,3 +34,8 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **Balance.** The AI assistant tuned the game-design numbers by running `tools/playtest.js`, which plays 500 games for each robot player, and extended that test to try both choices of every new card.
 - **Fact check.** The AI assistant opened NASA's photojournal page PIA16913 and added two verified numbers (Gale Crater night and day air temperatures) to `data/numbers.js`.
 - **Docs.** The AI assistant updated `README.md` and added this section.
+
+## Milestone 3 (Nov 15, 2026)
+
+- **How to play intro.** An AI assistant wrote the three intro screens: the words in `data/intro.js` and the code in `js/intro.js`. It also connected them to the start screen and footer in `index.html` and `js/ui.js`, and added the styles in `css/style.css`. The small drawings are SVG shapes written in code. No images were generated.
+- **Tests and docs.** The AI assistant added intro checks to `tools/playtest.js` and an intro section to `README.md`.

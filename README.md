@@ -27,6 +27,17 @@ Useful web addresses:
 | `index.html?seed=42` | The same seed always plays the same game. Good for testing and for recording. |
 | `index.html?demo=pump&seed=42` | Both together. |
 
+## How to play intro
+
+The first time someone opens the game, three short "How to play" screens come before the start screen: what a sol is, the three meters and the goal, and how choices work. Every screen has Next and Skip, and Escape also skips. The keyboard focus moves to each screen's heading.
+
+- The words are in `data/intro.js`; the code that shows them is `js/intro.js`.
+- The game remembers that the intro was seen (in `localStorage`). If the browser blocks that, the intro just shows again next time.
+- "How to play" on the start screen and in the footer (also during a game) opens it again.
+- `?demo=pump` and `?seed=` skip it, so recordings start straight away.
+- Lines with real facts point at verified entries in `data/numbers.js` and show the source link. The tired-crew line has `fatigueOnly: true`, so it disappears when the fatigue switch is off.
+- To see the intro again on your own computer as a first-time visitor, clear the site data or run `localStorage.removeItem("solShift.introSeen")` in the browser console.
+
 ## How a sol works
 
 1. **Day.** Sometimes a card appears first: a real solar event from the NASA data, a random event, or an answer from Earth. Then you plan the work day: short shift, full shift or overtime. More work makes more power, life support and shielding, and makes the crew more tired. Each plan shows its chance of a repair mistake.
@@ -92,6 +103,8 @@ index.html              the page. Loads the data files, then the engine, then th
 css/style.css           all the styles. Colors are variables at the top
 js/engine.js            the game rules. Knows nothing about the web page, so it can be tested in Node
 js/ui.js                draws the screen and handles button presses
+js/intro.js             the How to play screens
+data/intro.js           the How to play words
 data/numbers.js         EVERY game number, with kind, status and source
 data/events.js          the event deck (23 cards) and the two solar event card templates
 data/outcomes.js        end screen words for each way to lose, and for winning
