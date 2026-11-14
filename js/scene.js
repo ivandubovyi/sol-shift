@@ -2,31 +2,37 @@
   Sol Shift: the outpost scene, drawn with SVG shapes in code.
 
   NOTE: this code file was written by an AI assistant (Claude) from the team's
-  spec. See AI-USE.md. No image files and no generated images are used:
-  every shape below is written by hand in code.
+  spec. The art direction (framing, palette, poses) came from Pixel, the
+  team's AI designer bot. See AI-USE.md. No image files and no generated
+  images are used: every shape below is written by hand in code.
 
   This file only DRAWS. It never changes the game. js/ui.js looks at the
   game and calls these functions:
 
     var scene = SolShiftScene.create(svgElement)   build one picture
     scene.drawSky(phase)          "day", "dusk" or "night"
-    scene.setDust(on)             dusty, dim sky
+    scene.setDust(on)             dust storm: an ochre haze, far ridge first
     scene.setSpaceWeather(k, id)  null, "flare" or "storm" (one soft flash)
-    scene.setAlarm(on)            the 3 a.m. alarm glow
+    scene.setAlarm(on)            the night alarm: red light on the ground,
+                                  one crew member at the door with a torch
     scene.setPanelsDusty(on)      dust on the solar panels
     scene.setGreenhouseLights(on)
     scene.setShield(on)           storm shelter shield over the habitat
     scene.setDishBlinking(on)     a message to Earth is on its way
     scene.setCrewState(state)     "work", "tired", "exhausted", "shelter",
-                                  "sleep", "awake", "inside", "away"
+                                  "sleep", "inside", "away"
+    scene.setTitleMode(on)        the title screen look (slow drifting dust)
     scene.describe(text)          the short text alternative for screen readers
 
-  The title screen and the game each have their own picture, so create()
-  can be called more than once.
+  The colors and motion live in css/style.css under "Outpost scene".
+  Motion is turned off for people who ask their computer for reduced motion.
 
-  The look of each part (colors, motion) lives in css/style.css under
-  "Outpost scene". Motion is turned off for people who ask their computer
-  for reduced motion.
+  Layout of the drawing (SVG units, y grows downward):
+    the camera looks at x 120 to 680, y 140 to 360 (the viewBox)
+    sky above y 230, far ridge around y 230, mid dunes around y 260,
+    foreground ground from y 282. The habitat is the hero, a little left
+    of the middle, on a small mound. Panels sit behind it on the left;
+    the greenhouse and the dish sit further back on the right.
 */
 
 var SolShiftScene = (function () {
@@ -34,8 +40,11 @@ var SolShiftScene = (function () {
 
   var NS = "http://www.w3.org/2000/svg";
 
-  // The outline of the far mountain and everything below it.
-  var RIDGE_FAR = "M0 230 L120 210 L230 160 L300 140 L360 150 L430 185 L520 200 L620 190 L700 205 L800 200 L800 360 L0 360 Z";
+  // The far ridge outline (a tall mound in the middle, like the mountain
+  // in Gale Crater) and everything below it.
+  var RIDGE_FAR = "M60 252 L170 240 L260 237 L330 228 L400 215 L450 206 L482 203 L520 211 L580 229 L640 236 L740 242 L740 380 L60 380 Z";
+  var DUNES_MID = "M60 268 Q190 252 300 263 T500 258 T740 256 L740 380 L60 380 Z";
+  var GROUND_FG = "M60 287 Q260 278 400 285 T740 282 L740 380 L60 380 Z";
 
   // Make an SVG element with attributes, and add it to a parent.
   function add(parent, tag, attrs) {
@@ -45,155 +54,195 @@ var SolShiftScene = (function () {
     return el;
   }
 
-  function group(parent, cls) {
-    return add(parent, "g", cls ? { "class": cls } : {});
+  function group(parent, cls, transform) {
+    var attrs = {};
+    if (cls) { attrs["class"] = cls; }
+    if (transform) { attrs.transform = transform; }
+    return add(parent, "g", attrs);
   }
 
-  // A vertical color gradient, used for the skies.
-  function gradient(defs, id, stops) {
+  // A vertical color gradient (top to bottom).
+  function linear(defs, id, stops) {
     var g = add(defs, "linearGradient", { id: id, x1: 0, y1: 0, x2: 0, y2: 1 });
-    stops.forEach(function (s) { add(g, "stop", { offset: s[0], "stop-color": s[1] }); });
+    stops.forEach(function (s) { add(g, "stop", { offset: s[0], "stop-color": s[1], "stop-opacity": s[2] === undefined ? 1 : s[2] }); });
+  }
+
+  // A round glow that fades out toward its edge.
+  function radial(defs, id, color, strength) {
+    var g = add(defs, "radialGradient", { id: id, cx: "0.5", cy: "0.5", r: "0.5" });
+    add(g, "stop", { offset: "0", "stop-color": color, "stop-opacity": strength });
+    add(g, "stop", { offset: "1", "stop-color": color, "stop-opacity": "0" });
+  }
+
+  // A soft dark shadow on the ground under an object (25 percent opacity).
+  function contactShadow(parent, cx, cy, rx) {
+    add(parent, "ellipse", { cx: cx, cy: cy, rx: rx, ry: Math.max(2, rx * 0.16), "class": "contact-shadow" });
   }
 
   // ---------------------------------------------------------------------
-  // Building the picture (once)
+  // Building the picture (once per picture)
   // ---------------------------------------------------------------------
 
   function create(svgElement) {
     var svg = svgElement;
     // Each picture gets its own id prefix, so two pictures on one page
-    // never share (and break) each other's color gradients.
+    // never share (and break) each other's gradients.
     var P = (svg.id || "scene") + "-";
-    var parts = {};          // named pieces of the picture, so we can change them later
     var lastWeather = null;  // so a solar flash plays once per card, not on every redraw
+    var label;
+
     svg.textContent = "";
-    svg.setAttribute("viewBox", "0 0 800 360");
+    svg.setAttribute("viewBox", "120 140 560 220");
     svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
     var defs = add(svg, "defs");
-    // Day: dusty, rust-tinted sky. (An artistic choice, not a measured color.)
-    gradient(defs, P + "sky-day-grad", [["0", "#b9805a"], ["0.6", "#d9a678"], ["1", "#e8c49a"]]);
-    // Dusk: dark above, with the real Mars blue glow near the setting Sun.
-    gradient(defs, P + "sky-dusk-grad", [["0", "#1b2034"], ["0.5", "#363c58"], ["1", "#5d5a6e"]]);
-    gradient(defs, P + "sky-night-grad", [["0", "#05070f"], ["1", "#151a2c"]]);
-    gradient(defs, P + "ground-grad", [["0", "#9c4f2e"], ["1", "#5e2a19"]]);
-    var blue = add(defs, "radialGradient", { id: P + "sunset-blue", cx: "0.5", cy: "0.5", r: "0.5" });
-    add(blue, "stop", { offset: "0", "stop-color": "#cfe6ff", "stop-opacity": "0.95" });
-    add(blue, "stop", { offset: "0.35", "stop-color": "#7fb0e0", "stop-opacity": "0.75" });
-    add(blue, "stop", { offset: "1", "stop-color": "#7fb0e0", "stop-opacity": "0" });
-    var amber = add(defs, "radialGradient", { id: P + "alarm-grad", cx: "0.53", cy: "0.68", r: "0.55" });
-    add(amber, "stop", { offset: "0", "stop-color": "#ffb547", "stop-opacity": "0.7" });
-    add(amber, "stop", { offset: "1", "stop-color": "#ffb547", "stop-opacity": "0" });
-    var hatch = add(defs, "pattern", { id: P + "dust-hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(35)" });
-    add(hatch, "rect", { width: 6, height: 6, fill: "#b07a4f", opacity: "0.55" });
-    add(hatch, "line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "#7c4a2a", "stroke-width": 3 });
+    // Skies. Day and night colors are artistic choices, not measurements.
+    linear(defs, P + "sky-day", [["0", "#E8A87C"], ["1", "#F3C9A1"]]);
+    linear(defs, P + "sky-dusk", [["0", "#2C2A4A"], ["0.75", "#8A4F5E"], ["1", "#8A4F5E"]]);
+    linear(defs, P + "sky-night", [["0", "#0B0E1A"], ["1", "#1A1630"]]);
+    linear(defs, P + "dusk-band", [["0", "#E58A5A", 0], ["0.55", "#E58A5A", 0.75], ["1", "#E58A5A", 0]]);
+    radial(defs, P + "blue-glow", "#9ccaf5", 0.9);   // the real blue glow around a Mars sunset
+    radial(defs, P + "window-light", "#FFC46B", 0.7);
+    radial(defs, P + "alarm-light", "#FF6B4A", 0.75);
+    radial(defs, P + "gh-glow", "#9be38a", 0.8);
+    var hatch = add(defs, "pattern", { id: P + "dust-hatch", width: 5, height: 5, patternUnits: "userSpaceOnUse", patternTransform: "rotate(35)" });
+    add(hatch, "rect", { width: 5, height: 5, fill: "#b07a4f", opacity: "0.6" });
+    add(hatch, "line", { x1: 0, y1: 0, x2: 0, y2: 5, stroke: "#7c4a2a", "stroke-width": 2.5 });
 
-    // --- Sky layers: all three are drawn, and CSS fades between them ---
-    parts.root = svg;
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, fill: "url(#" + P + "sky-night-grad)" });
-    parts.skyDay = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, fill: "url(#" + P + "sky-day-grad)", "class": "sky-layer sky-day" });
-    parts.skyDusk = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, fill: "url(#" + P + "sky-dusk-grad)", "class": "sky-layer sky-dusk" });
+    // --- Sky: three layers; CSS fades between them ---
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-night)" });
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-day)", "class": "sky-layer sky-day" });
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-dusk)", "class": "sky-layer sky-dusk" });
+    add(svg, "rect", { x: 0, y: 205, width: 800, height: 45, fill: "url(#" + P + "dusk-band)", "class": "dusk-band" });
 
-    // Stars (night only). Fixed positions, so the sky looks the same every visit.
-    parts.stars = group(svg, "stars");
-    var starSpots = [[40, 30], [95, 70], [150, 25], [210, 90], [260, 40], [330, 20], [390, 75], [450, 35],
-      [520, 60], [580, 22], [640, 85], [700, 40], [760, 70], [120, 130], [300, 120], [480, 140], [660, 125], [740, 15]];
-    starSpots.forEach(function (p, i) {
-      add(parts.stars, "circle", { cx: p[0], cy: p[1], r: i % 3 === 0 ? 1.8 : 1.1, "class": "star" });
-    });
-
-    // The Sun: high in the day, low on the right at dusk with a blue glow.
-    parts.sunGlow = add(svg, "circle", { cx: 640, cy: 200, r: 110, fill: "url(#" + P + "sunset-blue)", "class": "sun-glow" });
-    // During a real solar event the Sun gets a bright ring, and a particle
-    // storm draws fast streaks across the sky.
-    parts.corona = add(svg, "circle", { cx: 640, cy: 70, r: 34, "class": "sun-corona" });
-    parts.sun = add(svg, "circle", { cx: 640, cy: 70, r: 14, "class": "sun" });
-    parts.streaks = group(svg, "particle-streaks");
-    [[520, 40], [470, 95], [560, 130], [400, 60], [610, 160], [330, 110], [700, 120]].forEach(function (p) {
-      add(parts.streaks, "line", { x1: p[0], y1: p[1], x2: p[0] - 46, y2: p[1] + 26, "class": "streak" });
-    });
-
-    // Far mountain (a big mound like the one in the middle of Gale Crater) and dunes.
-    add(svg, "path", { d: RIDGE_FAR, "class": "ridge-far" });
-    add(svg, "path", { d: "M0 262 Q120 236 240 252 T480 248 T800 244 L800 360 L0 360 Z", "class": "ridge-near" });
-    add(svg, "rect", { x: 0, y: 282, width: 800, height: 78, fill: "url(#" + P + "ground-grad)" });
-    // A few rocks
-    [[60, 318, 14], [250, 330, 9], [700, 322, 12], [470, 340, 7]].forEach(function (r) {
-      add(svg, "ellipse", { cx: r[0], cy: r[1], rx: r[2], ry: r[2] * 0.55, "class": "rock" });
-    });
-    // A dark layer over the land that fades in at dusk and night.
-    add(svg, "path", { d: RIDGE_FAR, "class": "land-shade" });
-
-    // --- Solar panels (left) ---
-    parts.panels = group(svg, "panels");
-    [70, 140, 210].forEach(function (x) {
-      add(parts.panels, "line", { x1: x + 26, y1: 262, x2: x + 26, y2: 290, "class": "panel-leg" });
-      add(parts.panels, "path", { d: "M" + x + " 262 L" + (x + 12) + " 228 L" + (x + 62) + " 228 L" + (x + 52) + " 262 Z", "class": "panel" });
-      add(parts.panels, "path", { d: "M" + x + " 262 L" + (x + 12) + " 228 L" + (x + 62) + " 228 L" + (x + 52) + " 262 Z", fill: "url(#" + P + "dust-hatch)", "class": "panel-dust" });
-      add(parts.panels, "line", { x1: x + 6, y1: 245, x2: x + 57, y2: 245, "class": "panel-line" });
-    });
-
-    // --- Habitat (middle): a long module with a round top and a window ---
-    parts.habitat = group(svg, "habitat");
-    add(parts.habitat, "rect", { x: 330, y: 214, width: 190, height: 76, rx: 34, "class": "hab-body" });
-    add(parts.habitat, "rect", { x: 300, y: 248, width: 36, height: 42, rx: 8, "class": "hab-airlock" });
-    add(parts.habitat, "rect", { x: 309, y: 258, width: 18, height: 32, rx: 4, "class": "hab-door" });
-    parts.window = add(parts.habitat, "rect", { x: 368, y: 236, width: 116, height: 32, rx: 14, "class": "hab-window" });
-    // Crew heads seen through the window at night
-    parts.windowCrew = group(parts.habitat, "window-crew");
-    [395, 426, 457].forEach(function (x, i) {
-      var head = group(parts.windowCrew, "window-head");
-      add(head, "circle", { cx: x, cy: 256, r: 9, "class": "wh-face" });
-      add(head, "path", { d: "M" + (x - 5) + " 254 q2.5 2 5 0 M" + (x + 1) + " 254 q2.5 2 5 0", "class": "wh-eyes-closed" });
-      add(head, "circle", { cx: x - 3, cy: 254, r: 1.6, "class": "wh-eyes-open" });
-      add(head, "circle", { cx: x + 3, cy: 254, r: 1.6, "class": "wh-eyes-open" });
-      if (i === 1) { add(parts.windowCrew, "text", { x: x + 10, y: 236, "class": "zzz" }).textContent = "z z"; }
-    });
-    // Warning beacon on the roof: glows amber during a night alarm.
-    add(parts.habitat, "circle", { cx: 425, cy: 212, r: 16, "class": "beacon-glow" });
-    add(parts.habitat, "rect", { x: 419, y: 204, width: 12, height: 10, rx: 4, "class": "beacon" });
-    parts.alert = add(parts.habitat, "text", { x: 452, y: 222, "text-anchor": "middle", "class": "alert-mark" });
-    parts.alert.textContent = "!";
-
-    // Storm shelter shield: a dome of light over the habitat.
-    parts.shield = add(svg, "path", { d: "M286 292 Q286 170 425 170 Q564 170 564 292", "class": "shield-dome" });
-
-    // --- Greenhouse (right of the habitat) ---
-    parts.greenhouse = group(svg, "greenhouse");
-    add(parts.greenhouse, "path", { d: "M560 290 L560 258 Q610 214 660 258 L660 290 Z", "class": "gh-glass" });
-    parts.ghLight = add(parts.greenhouse, "path", { d: "M560 290 L560 258 Q610 214 660 258 L660 290 Z", "class": "gh-light" });
-    [578, 596, 614, 632, 648].forEach(function (x, i) {
-      add(parts.greenhouse, "path", { d: "M" + x + " 290 q-6 -" + (12 + (i % 2) * 6) + " 0 -" + (18 + (i % 2) * 6) + " q6 " + (6 + (i % 2) * 3) + " 0 " + (18 + (i % 2) * 6), "class": "plant" });
-    });
-    add(parts.greenhouse, "path", { d: "M610 222 L610 290", "class": "gh-frame" });
-
-    // --- Comm dish (far right) ---
-    parts.dish = group(svg, "dish");
-    add(parts.dish, "line", { x1: 730, y1: 290, x2: 730, y2: 236, "class": "dish-mast" });
-    add(parts.dish, "path", { d: "M704 228 Q730 252 760 214 Z", "class": "dish-bowl" });
-    parts.dishLight = add(parts.dish, "circle", { cx: 731, cy: 222, r: 4, "class": "dish-light" });
-    parts.dishWaves = group(parts.dish, "dish-waves");
-    [14, 24, 34].forEach(function (r) {
-      add(parts.dishWaves, "path", { d: "M" + (744 + r * 0.3) + " " + (205 - r) + " a" + r + " " + r + " 0 0 1 " + r + " " + r, "class": "dish-wave" });
-    });
-
-    // --- Crew outside (3 stylized astronauts, not real people) ---
-    parts.crew = group(svg, "crew-outside");
-    parts.crewMembers = [
-      makeAstronaut(parts.crew, 250, 292),  // near the panels
-      makeAstronaut(parts.crew, 545, 292),  // by the greenhouse
-      makeAstronaut(parts.crew, 680, 292)   // near the dish
+    // Stars in three sizes. Fixed spots, so the sky is the same every visit.
+    var stars = group(svg, "stars");
+    var spots = [
+      [140, 152, 2], [172, 185, 0], [205, 160, 1], [238, 204, 0], [262, 148, 0], [290, 178, 2],
+      [318, 158, 0], [344, 196, 1], [372, 150, 0], [398, 176, 0], [430, 158, 2], [458, 190, 0],
+      [486, 150, 1], [512, 172, 0], [540, 160, 0], [566, 188, 2], [596, 152, 0], [622, 178, 1],
+      [650, 158, 0], [668, 196, 0], [188, 222, 0], [420, 200, 0], [610, 214, 1], [300, 218, 0],
+      // higher stars, only seen in the taller title screen picture
+      [270, 60, 2], [300, 92, 0], [325, 52, 1], [350, 118, 0], [372, 74, 0], [398, 46, 2], [420, 98, 0],
+      [446, 64, 1], [470, 120, 0], [492, 82, 0], [512, 48, 0], [338, 86, 0], [458, 132, 1], [284, 128, 0]
     ];
+    var sizes = [0.7, 1.1, 1.7];
+    spots.forEach(function (s, i) {
+      add(stars, "circle", { cx: s[0], cy: s[1], r: sizes[s[2]], "class": "star" + (s[2] === 2 || i % 5 === 0 ? " twinkle t" + (i % 3) : "") });
+    });
 
-    // --- Weather and alarm overlays (on top of everything) ---
-    parts.dust = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, "class": "dust-haze" });
-    parts.storm = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, "class": "storm-haze" });
-    parts.flash = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, "class": "flare-flash" });
-    parts.alarm = add(svg, "rect", { x: 0, y: 0, width: 800, height: 360, fill: "url(#" + P + "alarm-grad)", "class": "alarm-glow" });
+    // The Sun. High and pale by day; at dusk it sits low with its blue glow.
+    add(svg, "circle", { cx: 560, cy: 230, r: 62, fill: "url(#" + P + "blue-glow)", "class": "sun-glow" });
+    add(svg, "circle", { cx: 590, cy: 168, r: 22, "class": "sun-corona" });
+    add(svg, "circle", { cx: 590, cy: 168, r: 8, "class": "sun" });
+    var streaks = group(svg, "particle-streaks");
+    [[470, 150], [430, 175], [520, 190], [380, 160], [560, 205], [330, 185], [610, 180]].forEach(function (p) {
+      add(streaks, "line", { x1: p[0], y1: p[1], x2: p[0] - 34, y2: p[1] + 19, "class": "streak" });
+    });
+
+    // --- Land: far ridge (pale), dust over the ridge, mid dunes, ground ---
+    add(svg, "path", { d: RIDGE_FAR, "class": "ridge-far" });
+    add(svg, "path", { d: RIDGE_FAR, "class": "ridge-dust" });   // dust storms hide the far ridge first
+    add(svg, "path", { d: DUNES_MID, "class": "ridge-mid" });
+    add(svg, "path", { d: GROUND_FG, "class": "ground" });
+    add(svg, "ellipse", { cx: 384, cy: 300, rx: 125, ry: 13, "class": "mound" });   // the small rise under the habitat
+
+    // Warm light from the habitat windows, and the red alarm light, spilling onto the ground.
+    add(svg, "ellipse", { cx: 385, cy: 304, rx: 160, ry: 30, fill: "url(#" + P + "window-light)", "class": "window-spill" });
+    add(svg, "ellipse", { cx: 330, cy: 306, rx: 120, ry: 28, fill: "url(#" + P + "alarm-light)", "class": "alarm-spill" });
+
+    // Slow drifting dust (only moves on the title screen).
+    var drift = group(svg, "dust-drift");
+    add(drift, "ellipse", { cx: 250, cy: 270, rx: 140, ry: 10, "class": "drift" });
+    add(drift, "ellipse", { cx: 520, cy: 262, rx: 170, ry: 8, "class": "drift" });
+
+    // --- Solar panels: behind the habitat, on the left, smaller ---
+    var panels = group(svg, "panels");
+    [204, 238, 272].forEach(function (x) {
+      contactShadow(panels, x + 17, 289, 16);
+      add(panels, "line", { x1: x + 17, y1: 271, x2: x + 17, y2: 288, "class": "panel-leg" });
+      var face = "M" + x + " 278 L" + (x + 6) + " 262 L" + (x + 33) + " 262 L" + (x + 27) + " 278 Z";
+      add(panels, "path", { d: face, "class": "panel" });
+      // three cell lines across the panel
+      [0.25, 0.5, 0.75].forEach(function (f) {
+        add(panels, "line", { x1: x + 27 * f, y1: 278, x2: x + 6 + 27 * f, y2: 262, "class": "panel-cell" });
+      });
+      add(panels, "path", { d: face, fill: "url(#" + P + "dust-hatch)", "class": "panel-dust" });
+      add(panels, "line", { x1: x + 6, y1: 262, x2: x + 33, y2: 262, "class": "panel-edge" });   // thin light top edge
+    });
+
+    // --- Greenhouse: set back on the right ---
+    var gh = group(svg, "greenhouse");
+    contactShadow(gh, 508, 289, 34);
+    add(gh, "ellipse", { cx: 508, cy: 276, rx: 26, ry: 14, fill: "url(#" + P + "gh-glow)", "class": "gh-light" });
+    var dome = "M478 288 L478 271 Q508 243 538 271 L538 288 Z";
+    add(gh, "path", { d: dome, "class": "gh-glass" });
+    [486, 495, 504, 513, 522, 530].forEach(function (x, i) {
+      var h = 8 + (i % 2) * 4;
+      add(gh, "path", { d: "M" + x + " 288 q-3 -" + h + " 0 -" + (h + 3) + " q3 " + (h / 2) + " 0 " + (h + 3), "class": "plant" });
+    });
+    add(gh, "line", { x1: 508, y1: 251, x2: 508, y2: 288, "class": "gh-frame" });
+
+    // --- Comm dish: furthest back on the right ---
+    var dish = group(svg, "dish");
+    contactShadow(dish, 586, 289, 12);
+    add(dish, "line", { x1: 586, y1: 288, x2: 586, y2: 257, "class": "dish-mast" });
+    add(dish, "path", { d: "M569 254 Q586 268 605 244 Z", "class": "dish-bowl" });
+    add(dish, "circle", { cx: 587, cy: 251, r: 2.4, "class": "dish-red" });   // small red light, blinks slowly
+    var waves = group(dish, "dish-waves");
+    [9, 16, 23].forEach(function (r) {
+      add(waves, "path", { d: "M" + (600 + r * 0.2) + " " + (240 - r) + " a" + r + " " + r + " 0 0 1 " + r + " " + r, "class": "dish-wave" });
+    });
+
+    // --- Habitat: the hero, slightly left of the middle ---
+    var hab = group(svg, "habitat");
+    contactShadow(hab, 378, 297, 92);
+    add(hab, "rect", { x: 288, y: 262, width: 28, height: 34, rx: 6, "class": "hab-airlock" });
+    add(hab, "rect", { x: 295, y: 270, width: 14, height: 26, rx: 3, "class": "hab-door" });
+    add(hab, "rect", { x: 310, y: 238, width: 150, height: 58, rx: 28, "class": "hab-body" });
+    add(hab, "rect", { x: 314, y: 283, width: 142, height: 5, rx: 2, "class": "hab-band" });
+    add(hab, "rect", { x: 335, y: 252, width: 100, height: 25, rx: 12, "class": "hab-window" });
+    // Sleeping heads in the window at night
+    var heads = group(hab, "window-crew");
+    [358, 385, 412].forEach(function (x, i) {
+      var head = group(heads, "window-head head-" + (i + 1));
+      add(head, "circle", { cx: x, cy: 268, r: 7, "class": "wh-head" });
+      add(head, "path", { d: "M" + (x - 4) + " 267 q2 1.6 4 0 M" + (x + 1) + " 267 q2 1.6 4 0", "class": "wh-eyes" });
+    });
+    var z = add(hab, "text", { x: 430, y: 249, "class": "zzz" });
+    z.textContent = "z Z";
+    // Warning beacon on the roof
+    add(hab, "circle", { cx: 385, cy: 234, r: 13, "class": "beacon-glow" });
+    add(hab, "rect", { x: 380, y: 230, width: 10, height: 8, rx: 3, "class": "beacon" });
+
+    // Storm shelter shield
+    add(svg, "path", { d: "M268 298 Q268 196 380 196 Q492 196 492 298", "class": "shield-dome" });
+
+    // --- Crew outside: three stylized astronauts (not real people) ---
+    // Each has one color stripe matching a meter: teal, amber, violet.
+    var crew = group(svg, "crew-outside");
+    makeAstronaut(crew, 252, 299, "kneel", "stripe-life", true);    // brushing dust off the panels
+    makeAstronaut(crew, 470, 299, "carry", "stripe-power", false);  // carrying a crate
+    makeAstronaut(crew, 556, 299, "point", "stripe-shield", false); // pointing at the dish
+
+    // The night watch: one crew member at the door with a torch during an alarm.
+    var watch = group(svg, "night-watch");
+    add(watch, "path", { d: "M292 268 L238 252 L238 292 Z", "class": "torch-beam" });
+    makeAstronaut(watch, 302, 297, "torch", "stripe-life", true);
+
+    // --- Weather overlays (on top) ---
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "dust-haze" });
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "storm-haze" });
+    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "flare-flash" });
+
+    // Foreground rocks overlapping the bottom edge, to frame the shot.
+    add(svg, "ellipse", { cx: 150, cy: 360, rx: 40, ry: 17, "class": "rock-fg" });
+    add(svg, "ellipse", { cx: 196, cy: 356, rx: 15, ry: 7, "class": "rock-fg" });
+    add(svg, "ellipse", { cx: 650, cy: 362, rx: 46, ry: 19, "class": "rock-fg" });
 
     // The short text alternative for screen readers.
     svg.setAttribute("role", "img");
-    parts.label = add(svg, "title", {});
+    label = add(svg, "title", {});
 
     // ---------------------------------------------------------------------
     // Changing the picture
@@ -201,7 +250,7 @@ var SolShiftScene = (function () {
 
     // Turn a CSS class on or off on the whole picture. All the looks are in CSS.
     function flag(name, on) {
-      if (svg) { svg.classList.toggle(name, !!on); }
+      svg.classList.toggle(name, !!on);
     }
 
     // phase: "day", "dusk" or "night"
@@ -217,6 +266,16 @@ var SolShiftScene = (function () {
     function setGreenhouseLights(on) { flag("greenhouse-dark", !on); }
     function setShield(on) { flag("shield-up", on); }
     function setDishBlinking(on) { flag("dish-blinking", on); }
+    // The title screen picture is often tall (a phone held upright), so it
+    // uses a taller, narrower camera that keeps the glowing habitat in view.
+    function setTitleMode(on) {
+      flag("title-mode", on);
+      if (!on) { svg.setAttribute("viewBox", "120 140 560 220"); return; }
+      var w = svg.clientWidth || 1;
+      var h = svg.clientHeight || 1;
+      svg.setAttribute("viewBox", w / h < 1 ? "250 40 270 320" : "120 60 560 300");
+      svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
+    }
 
     // kind: null, "flare" or "storm". The soft flash plays once when a new
     // solar card appears (id tells cards apart). Never a strobe.
@@ -232,22 +291,22 @@ var SolShiftScene = (function () {
       lastWeather = kind ? id : null;
     }
 
-    // state: what the crew is doing. The CSS shows and hides faces and poses.
+    // state: what the crew is doing. The CSS shows and hides poses.
     //   "work"       outside, rested
     //   "tired"      outside, slumped
     //   "exhausted"  outside, slumped and yawning
-    //   "shelter"    everyone inside the shield
-    //   "sleep"      inside, asleep (seen through the window)
-    //   "awake"      inside at night, woken by an alarm
+    //   "shelter"    everyone inside, shield up
+    //   "sleep"      inside, asleep (heads in the window)
     //   "inside"     inside at night, no sleep shown (used when fatigue is off)
-    var CREW_STATES = ["work", "tired", "exhausted", "shelter", "sleep", "awake", "inside", "away"];
+    //   "away"       nobody shown outside
+    var CREW_STATES = ["work", "tired", "exhausted", "shelter", "sleep", "inside", "away"];
     function setCrewState(state) {
       CREW_STATES.forEach(function (s) { flag("crew-" + s, s === state); });
     }
 
     function describe(text) {
-      if (parts.label) { parts.label.textContent = text; }
-      if (svg) { svg.setAttribute("aria-label", text); }
+      label.textContent = text;
+      svg.setAttribute("aria-label", text);
     }
 
     return {
@@ -260,28 +319,65 @@ var SolShiftScene = (function () {
       setShield: setShield,
       setDishBlinking: setDishBlinking,
       setCrewState: setCrewState,
+      setTitleMode: setTitleMode,
       describe: describe
     };
   }
 
-  // One astronaut: a round helmet with a face, a suit body, a backpack.
-  // The face changes with the crew state (rested, tired, yawning).
-  function makeAstronaut(parent, x, groundY) {
-    var g = group(parent, "astronaut");
-    g.setAttribute("transform", "translate(" + x + " " + groundY + ")");
-    var body = group(g, "astro-body");
-    add(body, "rect", { x: -9, y: -28, width: 18, height: 22, rx: 7, "class": "suit" });     // body
-    add(body, "rect", { x: -13, y: -27, width: 6, height: 15, rx: 3, "class": "pack" });     // backpack
-    add(body, "rect", { x: -8, y: -8, width: 6, height: 8, rx: 2, "class": "suit" });        // legs
-    add(body, "rect", { x: 2, y: -8, width: 6, height: 8, rx: 2, "class": "suit" });
-    add(body, "circle", { cx: 0, cy: -38, r: 11, "class": "helmet" });                      // helmet
-    add(body, "circle", { cx: 1, cy: -38, r: 7.5, "class": "astro-face" });                  // face in the visor
-    add(body, "circle", { cx: -1.5, cy: -39.5, r: 1.2, "class": "eye eye-open" });
-    add(body, "circle", { cx: 3.5, cy: -39.5, r: 1.2, "class": "eye eye-open" });
-    add(body, "path", { d: "M-3.5 -39.5 h3.5 M2 -39.5 h3.5", "class": "eye-closed" });
-    add(body, "path", { d: "M-1.5 -35 q2.5 2 5 0", "class": "mouth-smile" });
-    add(body, "ellipse", { cx: 1, cy: -34.5, rx: 1.8, ry: 2.4, "class": "mouth-yawn" });
-    return g;
+  // ---------------------------------------------------------------------
+  // One astronaut, standing on the ground at (x, groundY).
+  //   pose:   "kneel" (with a brush), "carry" (a crate), "point" (at the
+  //           dish) or "torch" (holding a light). Each pose is a fixed set
+  //           of shapes, no moving limbs.
+  //   stripe: CSS class for the one color stripe on the suit
+  //   faceLeft: true = mirror the figure so it faces left
+  // The helmet has a dark visor with one highlight dot. When the crew is
+  // exhausted, a small yawn shows in the visor and the body slumps.
+  // ---------------------------------------------------------------------
+  function makeAstronaut(parent, x, groundY, pose, stripe, faceLeft) {
+    var outer = group(parent, "astronaut pose-" + pose,
+      "translate(" + x + " " + groundY + ")" + (faceLeft ? " scale(-1 1)" : ""));
+    var body = group(outer, "astro-body");
+    var kneel = pose === "kneel";
+    var lift = kneel ? 7 : 0;   // a kneeling body sits lower
+
+    // legs
+    if (kneel) {
+      add(body, "rect", { x: -2, y: -9, width: 13, height: 5.5, rx: 2.5, "class": "suit" });   // thigh, forward
+      add(body, "rect", { x: 7, y: -9, width: 5.5, height: 9, rx: 2.5, "class": "suit" });     // shin, down
+      add(body, "rect", { x: -9, y: -6, width: 9, height: 6, rx: 2.5, "class": "suit" });      // knee on the ground
+    } else {
+      add(body, "rect", { x: -7, y: -11, width: 6, height: 11, rx: 2.5, "class": "suit" });
+      add(body, "rect", { x: 1, y: -11, width: 6, height: 11, rx: 2.5, "class": "suit" });
+    }
+    // backpack, body, color stripe
+    add(body, "rect", { x: -12.5, y: -30 + lift, width: 5.5, height: 15, rx: 2, "class": "pack" });
+    add(body, "rect", { x: -8.5, y: -31 + lift, width: 17, height: 21, rx: 6, "class": "suit" });
+    add(body, "rect", { x: -8.5, y: -24 + lift, width: 17, height: 3.2, "class": "stripe " + stripe });
+
+    // arms and props for each pose
+    if (pose === "kneel") {
+      add(body, "line", { x1: 6, y1: -24 + lift, x2: 17, y2: -17 + lift, "class": "arm" });
+      add(body, "line", { x1: 17, y1: -17 + lift, x2: 27, y2: -26 + lift, "class": "brush-handle" });
+      add(body, "rect", { x: 25, y: -31 + lift, width: 7, height: 4, rx: 1, "class": "brush-head", transform: "rotate(-40 28 " + (-29 + lift) + ")" });
+    } else if (pose === "carry") {
+      add(body, "rect", { x: 5, y: -25, width: 15, height: 12, rx: 1.5, "class": "crate" });
+      add(body, "line", { x1: 5, y1: -21, x2: 20, y2: -21, "class": "crate-line" });
+      add(body, "line", { x1: 4, y1: -26, x2: 9, y2: -19, "class": "arm" });
+    } else if (pose === "point") {
+      add(body, "line", { x1: 5, y1: -27, x2: 17, y2: -40, "class": "arm" });
+      add(body, "line", { x1: -6, y1: -26, x2: -9, y2: -15, "class": "arm" });
+    } else if (pose === "torch") {
+      add(body, "line", { x1: 5, y1: -25, x2: 13, y2: -29, "class": "arm" });
+      add(body, "rect", { x: 12, y: -32, width: 6, height: 4.5, rx: 1, "class": "torch" });
+    }
+
+    // helmet, dark visor, highlight dot, and the yawn (shown only when exhausted)
+    add(body, "circle", { cx: 0, cy: -39 + lift, r: 9, "class": "helmet" });
+    add(body, "ellipse", { cx: 2, cy: -39 + lift, rx: 6, ry: 5, "class": "visor" });
+    add(body, "ellipse", { cx: 2.5, cy: -36.6 + lift, rx: 1.6, ry: 2, "class": "visor-yawn" });
+    add(body, "circle", { cx: 4.2, cy: -41 + lift, r: 1.3, "class": "visor-dot" });
+    return outer;
   }
 
   return { create: create };

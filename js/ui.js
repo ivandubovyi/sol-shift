@@ -61,6 +61,8 @@
     SCREENS.forEach(function (s) { $(s).hidden = (s !== id); });
     $("topbar-status").hidden = (id !== "game-screen");
     if (id !== "game-screen") { document.body.classList.remove("is-night"); }
+    // The title picture picks its camera from its size, so set it once it is visible.
+    if (id === "start-screen" && titleScene) { titleScene.setTitleMode(true); }
     window.scrollTo(0, 0);
   }
 
@@ -119,16 +121,17 @@
     box.textContent = "";
     E.METERS.forEach(function (key) {
       var row = document.createElement("div");
-      row.className = "gauge gauge-" + key;
+      row.className = "gauge pill gauge-" + key;
       row.id = "gauge-" + key;
       row.innerHTML =
-        '<svg class="gauge-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + GAUGE_ICONS[key] + '"/></svg>' +
-        '<div class="gauge-main">' +
-          '<div class="gauge-top"><span class="gauge-value"></span><span class="gauge-low">Low</span></div>' +
-          '<div class="gauge-bar" role="meter" aria-valuemin="0"><div class="gauge-fill"></div></div>' +
-          '<div class="gauge-name"></div>' +
-          '<div class="gauge-help small muted"></div>' +
+        '<div class="gauge-top">' +
+          '<svg class="gauge-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + GAUGE_ICONS[key] + '"/></svg>' +
+          '<span class="gauge-name"></span><span class="gauge-low">Low</span>' +
         '</div>' +
+        '<div class="gauge-row"><span class="gauge-value"></span>' +
+          '<div class="gauge-bar" role="meter" aria-valuemin="0"><div class="gauge-fill"></div></div>' +
+        '</div>' +
+        '<div class="gauge-help visually-hidden"></div>' +
         '<span class="gauge-delta" aria-hidden="true"></span>';
       row.querySelector(".gauge-name").textContent = E.METER_NAMES[key];
       row.querySelector(".gauge-help").textContent = GAUGE_HELP[key];
@@ -172,19 +175,23 @@
     lastMeters = Object.assign({}, game.meters);
   }
 
+  // Short crew lines for the corner of the picture. FATIGUE MODULE.
+  var MOOD_SHORT = ["Crew rested", "Crew getting tired", "Crew very tired: more mistakes", "Crew exhausted: many mistakes"];
+
   function renderCrew() {
-    // FATIGUE MODULE: no crew panel when the sleep part of the game is switched off.
+    // FATIGUE MODULE: no crew mood when the sleep part of the game is switched off.
     $("crew-panel").hidden = !E.fatigueOn(game);
     if (!E.fatigueOn(game)) { return; }
     var status = E.crewStatus(game);
     drawFace($("crew-face"), status.level);
     $("crew-face").setAttribute("aria-label", status.text);
-    $("crew-text").textContent = status.text;
+    $("crew-text").textContent = MOOD_SHORT[status.level];
+    $("crew-panel").setAttribute("data-level", status.level);
 
     var drift = game.driftMinutes;
     $("clock-text").textContent = drift < 1
-      ? "Body clock: in step with the Sun."
-      : "Body clock: " + E.formatMinutes(drift) + " out of step with the Sun. Out-of-step crews sleep worse.";
+      ? "Body clock in step with the Sun"
+      : "Body clock " + E.formatMinutes(drift) + " off the Sun";
   }
 
   // Draw a simple face. level 0 = rested, 3 = exhausted.
@@ -342,6 +349,10 @@
     var key = game.sol + "/" + game.phaseCount + "/" + prompt.title;
     if (key !== lastCardKey) {
       lastCardKey = key;
+      // "Real science" starts open on wide screens and folded on phones,
+      // so on a phone the choices fit on one screen. It stays a real
+      // <details>, so anyone can open it (and reach the source link).
+      $("card-learn").open = window.matchMedia("(min-width: 900px)").matches;
       $("card").classList.add("card-enter");
       if (game.card && game.card.type === "event" && game.phase === "night") { SolShiftSound.play("alarm"); }
       if (prompt.kind === "message") { SolShiftSound.play("message"); }
@@ -627,12 +638,13 @@
 
   // The title screen picture: the base at sunset, crew asleep inside.
   titleScene = SolShiftScene.create($("title-scene"));
-  titleScene.drawSky("dusk");
+  titleScene.drawSky("night");
   titleScene.setCrewState("inside");
-  titleScene.describe("A small Mars base at sunset.");
-
-  // FATIGUE MODULE: hide the crew sentence on the start screen when fatigue is off.
-  $("intro-fatigue").hidden = DATA.numbers.fatigueEnabled.value !== true;
+  titleScene.setTitleMode(true);
+  titleScene.describe("A small Mars base at night, its windows glowing.");
+  window.addEventListener("resize", function () {
+    if (!$("start-screen").hidden) { titleScene.setTitleMode(true); }
+  });
 
   // What to show first:
   //   ?demo=pump      straight into the pump fault (no intro, for the demo video)

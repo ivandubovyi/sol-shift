@@ -37,24 +37,17 @@
 
   <main id="app">
 
-    <!-- START SCREEN -->
+    <!-- START SCREEN: a full-bleed night scene with the title over it -->
     <section id="start-screen" class="screen title-screen">
-      <!-- Decorative picture of the base at sunset. -->
-      <div class="stage stage-title"><svg id="title-scene" class="scene" aria-hidden="true" focusable="false"></svg></div>
-      <div class="panel intro title-panel">
-        <h1 class="game-title">Sol Shift</h1>
-        <p class="lead">You are in charge of a small base on Mars. Keep it running for 30 sols until the next ship arrives.</p>
-        <p>A <strong>sol</strong> is one day on Mars. It is about 24 hours and 40 minutes long, a little longer than a day on Earth.</p>
-        <p>Keep three things from running out:</p>
-        <ul class="intro-list">
-          <li><span class="dot dot-life"></span><strong>Life support:</strong> air, water and food.</li>
-          <li><span class="dot dot-power"></span><strong>Power:</strong> electricity from solar panels.</li>
-          <li><span class="dot dot-shield"></span><strong>Shielding:</strong> protection from radiation, invisible energy from the Sun and space that can harm the body.</li>
-        </ul>
-        <p id="intro-fatigue">And watch your crew. Tired people make more mistakes, and mistakes cost life support.</p>
-        <button class="btn btn-primary" id="start-button" type="button">Start the mission</button>
-        <button class="btn btn-quiet" type="button" data-open-intro>How to play</button>
-        <button class="btn btn-quiet" type="button" data-open-sources>Where do the facts come from?</button>
+      <div class="title-stage">
+        <!-- Decorative picture of the base at night. -->
+        <svg id="title-scene" class="scene" aria-hidden="true" focusable="false"></svg>
+        <div class="title-overlay">
+          <h1 class="game-title">Sol Shift</h1>
+          <p class="title-sub">Keep the crew alive for 30 sols</p>
+          <button class="btn btn-primary btn-big" id="start-button" type="button">Start sol 1</button>
+          <button class="link-button title-link" type="button" data-open-intro>How to play</button>
+        </div>
       </div>
     </section>
 
@@ -76,47 +69,42 @@
     <!-- GAME SCREEN -->
     <section id="game-screen" class="screen" hidden>
 
-      <!-- The outpost scene. It only shows what the text already says,
-           so it has a short text alternative (set by js/ui.js). -->
+      <!-- The outpost scene, with the crew mood (top left) and the three
+           meters (bottom) laid over it. The picture only shows what the
+           text already says, so it has a short text alternative. -->
       <div class="stage" id="stage">
         <svg id="scene" class="scene" focusable="false"></svg>
         <div class="sol-title" id="sol-title" aria-hidden="true">
           <span class="sol-title-num" id="sol-title-num"></span>
           <span class="sol-title-sub" id="sol-title-sub"></span>
         </div>
-      </div>
 
-      <div class="hud">
-        <!-- The three meters -->
-        <div class="panel gauges-panel">
-          <h2 class="panel-title">Base</h2>
-          <div id="meters" class="gauges"></div>
-        </div>
-
-        <!-- The crew: tiredness is hidden, shown as a face and words -->
-        <div class="panel crew" id="crew-panel">
-          <div class="crew-row">
-            <svg id="crew-face" class="face" viewBox="0 0 100 100" role="img" aria-label="Crew face"></svg>
-            <div>
-              <p id="crew-text" class="crew-text"></p>
-              <p id="clock-text" class="small muted"></p>
-            </div>
+        <!-- The crew: tiredness is hidden, shown as a face and a short line -->
+        <div class="mood" id="crew-panel">
+          <svg id="crew-face" class="face" viewBox="0 0 100 100" role="img" aria-label="Crew face"></svg>
+          <div class="mood-text">
+            <p id="crew-text" class="crew-text"></p>
+            <p id="clock-text" class="clock-text"></p>
           </div>
         </div>
+
+        <!-- The three meters -->
+        <div class="pills" id="meters" role="group" aria-label="Base meters"></div>
       </div>
 
         <!-- The card the player must answer -->
         <article class="panel card" id="card" aria-live="polite">
           <p class="card-clock" id="card-clock"></p>
           <h2 class="card-title" id="card-title"></h2>
-          <p id="card-text"></p>
+          <p id="card-text" class="card-text"></p>
+          <div class="choices" id="choices"></div>
           <p class="card-note" id="card-note" hidden></p>
-          <div class="learn" id="card-learn" hidden>
-            <p class="learn-label">Real science</p>
+          <!-- Real science: open on wide screens, folded on phones -->
+          <details class="learn" id="card-learn" hidden>
+            <summary class="learn-label">Real science</summary>
             <p id="card-learn-text"></p>
             <p class="small" id="card-learn-source"></p>
-          </div>
-          <div class="choices" id="choices"></div>
+          </details>
         </article>
 
         <!-- Mission log -->

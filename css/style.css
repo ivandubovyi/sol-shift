@@ -1,47 +1,52 @@
 /*
   Sol Shift: styles.
-  NOTE: this file was written by an AI assistant (Claude). See AI-USE.md.
+  NOTE: this file was written by an AI assistant (Claude). The art direction
+  (framing, palette, layout on phones) came from Pixel, the team's AI
+  designer bot. See AI-USE.md.
 
-  Design idea: the outpost picture is the star. Everything around it is a
-  quiet, dark instrument panel. The main accent color is the blue of a real
-  Mars sunset (see marsSunsetBlue in data/numbers.js); the rust color belongs
-  to the Mars landscape.
+  Design idea: restraint, plus one warm light in the dark. The outpost
+  picture is the star; everything around it is a quiet, near-black panel.
+  The accent color for buttons is the blue of a real Mars sunset (see
+  marsSunsetBlue in data/numbers.js).
 
   Colors are "tokens" (CSS variables) defined once at the top.
-  Phones first: one column. Wider screens: picture on the left, card on the right.
-  Anyone who asks their computer for reduced motion gets no movement or flashes.
+  Phones first: one column, the picture and meters in one compact block,
+  then the card. Wide screens: picture on the left, card on the right.
+  Anyone who asks their computer for reduced motion gets no movement and
+  no flashes.
 */
 
 :root {
   /* Surfaces, from the page background up to raised panels */
-  --space: #100b0a;
-  --surface-1: #1a1412;
-  --surface-2: #241c19;
-  --surface-3: #352a24;
-  --border: #46362d;
+  --space: #0e0b0b;
+  --surface-1: #181313;
+  --surface-2: #221b19;
+  --surface-3: #33292a;
+  --border: #423533;
 
   /* Text */
-  --text: #f4ebe3;
-  --text-muted: #c0ae9f;
+  --text: #f4ece4;
+  --text-muted: #c4b4a6;
 
   /* Accents */
-  --rust: #c8643a;          /* the Mars landscape */
-  --sunset: #8fc1ef;        /* the blue of a Mars sunset: buttons, focus, highlights */
+  --rust: #c97a55;
+  --sunset: #8fc1ef;        /* buttons, focus, highlights */
   --sunset-strong: #bfe0ff;
   --sunset-ink: #0d1a28;    /* dark text on the blue */
   --alarm: #ffb547;
+  --alarm-red: #ff6b4a;
   --danger: #ff6b6b;
   --ok: #8bd49a;
 
-  /* Gauge colors */
+  /* Meter colors */
   --meter-life: #5ec4b6;
   --meter-power: #f2c14e;
   --meter-shield: #a395f5;
 
-  /* Type: a rounded face for headings (friendly for young players), the
-     system face for reading. Both are already on the computer, so the game
-     works offline. */
-  --font-display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", system-ui, sans-serif;
+  /* Type: system faces only (nothing to download, works offline).
+     Headings use a rounded heavy face where the computer has one. */
+  --font-display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-heavy: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --radius: 14px;
@@ -52,6 +57,12 @@
 
 /* Anything with the hidden attribute stays hidden, even if a rule below sets display. */
 [hidden] { display: none !important; }
+
+/* Text for screen readers only */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 html { -webkit-text-size-adjust: 100%; }
 
@@ -66,7 +77,7 @@ body {
 
 a { color: var(--sunset); }
 
-h1, h2, .game-title, .card-title, .sol-title-num, .stamp {
+h1, h2, .card-title, .sol-title-num, .stamp {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
 }
@@ -89,21 +100,21 @@ p { margin: 0 0 12px; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 16px;
-  background: rgba(16, 11, 10, 0.92);
+  padding: 6px 16px;
+  background: rgba(14, 11, 11, 0.94);
   border-bottom: 1px solid var(--border);
 }
 
-.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--text); }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--text); }
 
 .topbar-right, .topbar-status { display: flex; gap: 6px; align-items: center; }
 
 .chip {
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: var(--surface-3);
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -118,30 +129,28 @@ p { margin: 0 0 12px; }
 
 /* ---------- Layout ---------- */
 
-main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 16px; }
+main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
 
-.screen { display: grid; gap: 14px; }
+.screen { display: grid; gap: 12px; }
 
-/* The game screen: picture, gauges and crew, the card, the log.
-   Phones: one column with the picture on top and the card under the gauges. */
+/* Game screen. Phones: the picture (with meters inside), then the card,
+   then the log. Wide screens: picture left, card right. */
 #game-screen {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "stage" "hud" "card" "log";
+  grid-template-areas: "stage" "card" "log";
 }
 #stage { grid-area: stage; }
-.hud { grid-area: hud; display: grid; gap: 10px; }
 #card { grid-area: card; }
 .log-panel { grid-area: log; }
 
 @media (min-width: 900px) {
   #game-screen {
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
-    grid-template-areas: "stage card" "hud card" "log card";
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: minmax(0, 1.6fr) minmax(330px, 1fr);
+    grid-template-areas: "stage card" "log card";
+    grid-template-rows: auto 1fr;
     align-items: start;
   }
-  .hud { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
-  #card { position: sticky; top: 64px; }
+  #card { position: sticky; top: 60px; }
 }
 
 .panel {
@@ -160,14 +169,6 @@ main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 16px; }
 }
 
 .intro, .end, .sources { max-width: 640px; margin: 0 auto; width: 100%; }
-.lead { font-size: 1.1rem; }
-
-.intro-list { padding-left: 0; list-style: none; margin: 0 0 12px; }
-.intro-list li { margin-bottom: 8px; padding-left: 22px; position: relative; }
-.dot { position: absolute; left: 0; top: 0.45em; width: 12px; height: 12px; border-radius: 50%; }
-.dot-life { background: var(--meter-life); }
-.dot-power { background: var(--meter-power); }
-.dot-shield { background: var(--meter-shield); }
 
 /* ---------- Buttons ---------- */
 
@@ -207,12 +208,14 @@ main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 16px; }
 .btn-choice {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 10px 14px;
   border-left: 4px solid var(--sunset);
 }
 .btn-choice:hover { border-color: var(--sunset-strong); }
-.choice-label { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; }
-.choice-detail { font-size: 0.92rem; color: var(--text-muted); }
+.choice-label { font-family: var(--font-display); font-weight: 800; font-size: 1.02rem; line-height: 1.25; }
+.choice-detail { font-size: 0.86rem; line-height: 1.35; color: var(--text-muted); }
 
 .link-button {
   background: none;
@@ -221,180 +224,336 @@ main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 16px; }
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 8px 4px;
   min-height: 44px;
 }
 
-/* ---------- Outpost scene (drawn by js/scene.js) ---------- */
+/* ---------- The stage: picture + crew mood + meters ---------- */
 
 .stage {
   position: relative;
-  aspect-ratio: 20 / 9;
-  border-radius: 18px;
+  height: 196px;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: #05070f;
+  background: #0B0E1A;
 }
-@media (min-width: 900px) { .stage { aspect-ratio: 16 / 8; } }
+@media (min-width: 900px) { .stage { height: auto; aspect-ratio: 16 / 9; } }
 
 .scene { display: block; width: 100%; height: 100%; }
 
-/* Sky: three layers that fade into each other. */
+/* Crew mood: a face and one short line in the top-left corner. */
+.mood {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  background: rgba(10, 8, 12, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.mood .face { width: 26px; height: 26px; flex: none; }
+.mood p { margin: 0; }
+.crew-text { font-size: 0.78rem; font-weight: 700; line-height: 1.2; color: var(--text); }
+.clock-text { display: none; font-size: 0.74rem; color: var(--text-muted); line-height: 1.2; }
+.mood[data-level="2"], .mood[data-level="3"] { border-color: var(--danger); }
+@media (min-width: 900px) {
+  .mood { top: 12px; left: 12px; padding: 5px 14px 5px 5px; border-radius: 14px; }
+  .mood .face { width: 38px; height: 38px; }
+  .crew-text { font-size: 0.92rem; }
+  .clock-text { display: block; }
+}
+
+/* The three meters as pills over a dark scrim at the bottom of the picture. */
+.pills {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 18px 8px 8px;
+  background: linear-gradient(to top, rgba(8, 6, 10, 0.92) 0%, rgba(8, 6, 10, 0.75) 60%, rgba(8, 6, 10, 0) 100%);
+}
+
+.pill {
+  position: relative;
+  padding: 4px 8px 5px;
+  border-radius: 10px;
+  background: rgba(10, 8, 12, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  min-width: 0;
+}
+.gauge-top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.gauge-icon { width: 13px; height: 13px; flex: none; transform-origin: center; }
+.gauge-lifeSupport .gauge-icon { fill: var(--meter-life); }
+.gauge-power .gauge-icon { fill: var(--meter-power); }
+.gauge-shielding .gauge-icon { fill: var(--meter-shield); }
+.gauge-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #e9dfd5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.gauge-row { display: flex; align-items: center; gap: 6px; }
+.gauge-value {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.02rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+.gauge-bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+.gauge-fill { height: 100%; border-radius: 999px; transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gauge-lifeSupport .gauge-fill { background: var(--meter-life); }
+.gauge-power .gauge-fill { background: var(--meter-power); }
+.gauge-shielding .gauge-fill { background: var(--meter-shield); }
+
+/* Danger: red border, striped bar and a "Low" tag, so it never depends on color alone. */
+.gauge-low {
+  display: none;
+  flex: none;
+  font-size: 0.64rem;
+  font-weight: 900;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #2a0b0b;
+}
+.gauge.is-low { border-color: var(--danger); }
+.gauge.is-low .gauge-low { display: inline-block; }
+.gauge.is-low .gauge-value { color: #ff8f8f; }
+.gauge.is-low .gauge-fill { background: repeating-linear-gradient(135deg, var(--danger) 0 5px, #b33a3a 5px 10px); }
+
+.gauge-delta {
+  position: absolute;
+  right: 6px;
+  top: -16px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.gauge-delta.up { color: var(--ok); }
+.gauge-delta.down { color: #ff8f8f; }
+
+@media (min-width: 900px) {
+  .pills { gap: 10px; padding: 26px 12px 12px; }
+  .pill { padding: 7px 12px 8px; }
+  .gauge-icon { width: 17px; height: 17px; }
+  .gauge-name { font-size: 0.85rem; }
+  .gauge-value { font-size: 1.3rem; }
+  .gauge-bar { height: 8px; }
+}
+
+/* "Sol 4" title at the top of the picture at the start of each sol */
+.sol-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+.sol-title-num { font-size: clamp(1.6rem, 7vw, 2.8rem); font-weight: 900; line-height: 1; }
+.sol-title-sub { font-size: 0.8rem; font-weight: 700; }
+
+/* ---------- Outpost scene (drawn by js/scene.js) ---------- */
+/* Palette from Pixel. Day and night sky colors are artistic choices. */
+
 .sky-layer { opacity: 0; transition: opacity 1.4s ease; }
 .is-day .sky-day { opacity: 1; }
 .is-dusk .sky-dusk { opacity: 1; }
+.dusk-band { opacity: 0; transition: opacity 1.4s ease; }
+.is-dusk .dusk-band { opacity: 1; }
 
 .star { fill: #f4f1ff; }
 .stars { opacity: 0; transition: opacity 1.4s ease; }
-.is-dusk .stars { opacity: 0.3; }
+.is-dusk .stars { opacity: 0.25; }
 .is-night .stars { opacity: 1; }
 
-/* The Sun moves from high in the sky to the horizon, then out of sight. */
-.sun { fill: #fff6e3; transition: transform 1.4s ease, opacity 1.4s ease; }
-.is-dusk .sun { transform: translate(-30px, 112px); }
-.is-night .sun { transform: translate(-60px, 260px); opacity: 0; }
+/* The Sun: small and pale by day; at dusk a small blue sun near the
+   horizon with its blue glow (the real Mars sunset). */
+.sun { fill: #fff3dc; transition: transform 1.4s ease, opacity 1.4s ease, fill 1.4s ease; }
 .sun-corona { fill: #fff1c8; opacity: 0; transition: opacity 0.6s ease; }
+.is-dusk .sun { transform: translate(-30px, 62px); fill: #e4f1ff; }
+.is-night .sun { transform: translate(-40px, 110px); opacity: 0; }
+.sun-glow { opacity: 0; transition: opacity 1.4s ease; }
+.is-dusk .sun-glow { opacity: 1; }
 .is-flare .sun-corona { opacity: 0.45; }
 .is-storm .sun-corona { opacity: 0.6; }
-.streak { stroke: #ffe3f0; stroke-width: 2; stroke-linecap: round; }
+.streak { stroke: #ffe3f0; stroke-width: 1.6; stroke-linecap: round; }
 .particle-streaks { opacity: 0; transition: opacity 0.6s ease; }
-.is-storm .particle-streaks { opacity: 0.7; }
-/* The real blue sunset glow, only at dusk. */
-.sun-glow { opacity: 0; transition: opacity 1.4s ease; transform: translate(-30px, -14px); }
-.is-dusk .sun-glow { opacity: 1; }
+.is-storm .particle-streaks { opacity: 0.75; }
 
-.ridge-far { fill: #9a5236; transition: fill 1.4s ease; }
-.ridge-near { fill: #b0603a; transition: fill 1.4s ease; }
-.is-dusk .ridge-far { fill: #4c3337; }
-.is-dusk .ridge-near { fill: #5e3a32; }
-.is-night .ridge-far { fill: #1c1418; }
-.is-night .ridge-near { fill: #26191a; }
-.rock { fill: #6e3420; }
-.land-shade { fill: #070912; opacity: 0; transition: opacity 1.4s ease; }
-.is-dusk .land-shade { opacity: 0.35; }
-.is-night .land-shade { opacity: 0.7; }
+/* Land in three bands. Each phase has its own colors. */
+.ridge-far { fill: #C97A55; transition: fill 1.4s ease; }
+.ridge-mid { fill: #A85A38; transition: fill 1.4s ease; }
+.ground { fill: #7A3A22; transition: fill 1.4s ease; }
+.mound { fill: #844128; transition: fill 1.4s ease; }
+.rock-fg { fill: #4A2214; transition: fill 1.4s ease; }
+.contact-shadow { fill: #000; opacity: 0.25; }
+.is-dusk .ridge-far { fill: #5A3A4A; }
+.is-dusk .ridge-mid { fill: #4a2f35; }
+.is-dusk .ground, .is-dusk .mound { fill: #3E2420; }
+.is-dusk .rock-fg { fill: #241412; }
+.is-night .ridge-far { fill: #1F1A26; }
+.is-night .ridge-mid { fill: #221a20; }
+.is-night .ground, .is-night .mound { fill: #2A1A16; }
+.is-night .rock-fg { fill: #120b0a; }
 
-/* Solar panels */
-.panel-leg { stroke: #6b6f78; stroke-width: 3; }
-.panel { fill: #24476e; stroke: #9cc0e4; stroke-width: 1.5; }
-.panel-line { stroke: #9cc0e4; stroke-width: 1; opacity: 0.6; }
+/* Dust storm: an ochre layer over the far ridge first, then a light haze. */
+.ridge-dust { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
+.is-dusty .ridge-dust { opacity: 0.6; }
+.dust-haze { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
+.is-dusty .dust-haze { opacity: 0.2; }
+.drift { fill: #d9a77a; opacity: 0.07; }
+.dust-drift { opacity: 0; }
+.title-mode .dust-drift { opacity: 1; }
+
+/* Warm window light and the alarm light, spilling onto the ground.
+   At night these are the only warm lights. */
+.window-spill { opacity: 0; transition: opacity 1.2s ease; }
+.is-dusk .window-spill { opacity: 0.45; }
+.is-night .window-spill { opacity: 0.85; }
+.alarm-spill { opacity: 0; transition: opacity 0.6s ease; }
+.is-alarm .alarm-spill { opacity: 1; }
+
+/* Solar panels: blue glass, thin light top edge, three cell lines */
+.panel-leg { stroke: #6b6f78; stroke-width: 2.2; }
+.panel { fill: #2b4d73; stroke: #1b3350; stroke-width: 0.8; transition: fill 1.4s ease; }
+.panel-cell { stroke: #8fb4d8; stroke-width: 0.6; opacity: 0.55; }
+.panel-edge { stroke: #dfeeff; stroke-width: 1.1; stroke-linecap: round; }
 .panel-dust { opacity: 0; transition: opacity 0.8s ease; }
-.panels-dusty .panel-dust { opacity: 0.9; }
-.is-night .panel { fill: #172a42; }
+.panels-dusty .panel-dust { opacity: 0.92; }
+.is-dusk .panel, .is-night .panel { fill: #172a42; }
+.is-night .panel-edge { stroke: #6f7d90; }
 
-/* Habitat */
-.hab-body { fill: #e3ddd4; stroke: #9a8f84; stroke-width: 2; transition: fill 1.4s ease; }
-.hab-airlock { fill: #cfc7bc; stroke: #9a8f84; stroke-width: 2; transition: fill 1.4s ease; }
-.hab-door { fill: #8a8178; }
-.is-dusk .hab-body, .is-dusk .hab-airlock { fill: #a9a3a6; }
-.is-night .hab-body, .is-night .hab-airlock { fill: #4a4b55; }
-.hab-window { fill: #2c3b4c; stroke: #9a8f84; stroke-width: 2; transition: fill 1s ease; }
-.is-dusk .hab-window, .is-night .hab-window, .crew-shelter .hab-window { fill: #ffd28a; }
-.is-alarm .hab-window { fill: #ffb547; }
+/* Habitat: light metal by day, darker at dusk and night, windows warm */
+.hab-body, .hab-airlock { fill: #D9DDE2; stroke: #9aa0a8; stroke-width: 1.4; transition: fill 1.4s ease; }
+.hab-band { fill: #b8bec6; transition: fill 1.4s ease; }
+.hab-door { fill: #8c939c; }
+.is-dusk .hab-body, .is-dusk .hab-airlock { fill: #8b8f99; }
+.is-dusk .hab-band { fill: #6f747d; }
+.is-night .hab-body, .is-night .hab-airlock { fill: #3b3f4a; stroke: #565b66; }
+.is-night .hab-band { fill: #30333c; }
+.hab-window { fill: #9ED0D8; stroke: #9aa0a8; stroke-width: 1.4; transition: fill 1s ease; }
+.is-dusk .hab-window, .is-night .hab-window, .crew-shelter .hab-window { fill: #FFC46B; }
+.is-night .hab-door { fill: #FFC46B; opacity: 0.55; }
 
-/* Crew seen through the window (night, or in the storm shelter) */
-.window-crew { opacity: 0; transition: opacity 0.6s ease; }
-.crew-sleep .window-crew, .crew-awake .window-crew, .crew-inside .window-crew, .crew-shelter .window-crew { opacity: 1; }
-.wh-face { fill: #f1d2b6; stroke: #6a4a3a; stroke-width: 1.5; }
-.wh-eyes-closed { fill: none; stroke: #3a2a22; stroke-width: 1.5; stroke-linecap: round; display: none; }
-.wh-eyes-open { fill: #3a2a22; }
-.crew-sleep .wh-eyes-closed { display: inline; }
-.crew-sleep .wh-eyes-open { display: none; }
-.zzz { fill: #e8f1ff; font-family: var(--font-display); font-weight: 800; font-size: 14px; opacity: 0; }
-.crew-sleep .zzz { opacity: 0.9; }
+/* Heads in the window: sleeping (night), or just inside (shelter, fatigue off) */
+.window-crew, .zzz { opacity: 0; transition: opacity 0.6s ease; }
+.crew-sleep .window-crew, .crew-inside .window-crew, .crew-shelter .window-crew { opacity: 1; }
+.wh-head { fill: #6a4a3a; }
+.wh-eyes { fill: none; stroke: #2a1a14; stroke-width: 1.2; stroke-linecap: round; opacity: 0; }
+.crew-sleep .wh-eyes { opacity: 1; }
+.zzz { fill: #fff6e0; font-family: var(--font-display); font-weight: 900; font-size: 15px; }
+.crew-sleep .zzz { opacity: 0.95; }
+/* During an alarm one crew member is on watch at the door, so only two heads show. */
+.is-alarm .head-1 { opacity: 0; }
+
+/* Roof beacon: red during an alarm */
 .beacon { fill: #6d5a4a; transition: fill 0.3s ease; }
-.is-alarm .beacon { fill: #ffb547; }
-.beacon-glow { fill: #ffb547; opacity: 0; }
-.is-alarm .beacon-glow { opacity: 0.45; }
-.alert-mark { fill: #ffb547; font-family: var(--font-display); font-weight: 900; font-size: 26px; opacity: 0; }
-.crew-awake .alert-mark { opacity: 1; }
+.is-alarm .beacon { fill: var(--alarm-red); }
+.beacon-glow { fill: var(--alarm-red); opacity: 0; }
+.is-alarm .beacon-glow { opacity: 0.5; }
 
 /* Storm shelter shield */
 .shield-dome {
-  fill: rgba(150, 200, 255, 0.14);
+  fill: rgba(150, 200, 255, 0.13);
   stroke: #a9d2ff;
-  stroke-width: 3;
-  stroke-dasharray: 10 6;
+  stroke-width: 2;
+  stroke-dasharray: 8 5;
   opacity: 0;
   transition: opacity 0.6s ease;
 }
 .shield-up .shield-dome { opacity: 1; }
 
-/* Greenhouse */
-.gh-glass { fill: rgba(190, 230, 255, 0.2); stroke: #cfe6ef; stroke-width: 2; }
-.gh-light { fill: #b9f5a0; opacity: 0.3; transition: opacity 0.8s ease; }
-.is-dusk .gh-light, .is-night .gh-light { opacity: 0.65; }
+/* Greenhouse: glass, plants, and a soft inner green glow (strong at night) */
+.gh-glass { fill: rgba(158, 208, 216, 0.28); stroke: #cfe6ef; stroke-width: 1.3; }
+.gh-light { opacity: 0.35; transition: opacity 0.8s ease; }
+.is-dusk .gh-light { opacity: 0.7; }
+.is-night .gh-light { opacity: 1; }
 .greenhouse-dark .gh-light { opacity: 0; }
-.plant { fill: #4fae5a; stroke: #2f7a3a; stroke-width: 1; transition: fill 0.8s ease; }
+.plant { fill: #4fae5a; stroke: #2f7a3a; stroke-width: 0.7; transition: fill 0.8s ease; }
 .greenhouse-dark .plant { fill: #3b5a3a; }
-.gh-frame { stroke: #cfe6ef; stroke-width: 1.5; }
+.gh-frame { stroke: #cfe6ef; stroke-width: 1; }
 
-/* Comm dish */
-.dish-mast { stroke: #8a8f99; stroke-width: 4; }
-.dish-bowl { fill: #dedad3; stroke: #8a8f99; stroke-width: 2; }
-.dish-light { fill: #5b5f68; }
-.dish-wave { fill: none; stroke: var(--sunset); stroke-width: 2.5; stroke-linecap: round; }
+/* Comm dish: slow red light, and waves while a message to Earth is waiting */
+.dish-mast { stroke: #9aa0a8; stroke-width: 2.6; }
+.dish-bowl { fill: #D9DDE2; stroke: #9aa0a8; stroke-width: 1.3; transition: fill 1.4s ease; }
+.is-night .dish-bowl { fill: #5b606b; }
+.dish-red { fill: #ff4a3a; }
+.dish-wave { fill: none; stroke: var(--sunset); stroke-width: 1.8; stroke-linecap: round; }
 .dish-waves { opacity: 0; transition: opacity 0.4s ease; }
-.dish-blinking .dish-light { fill: var(--sunset-strong); }
-.dish-blinking .dish-waves { opacity: 0.9; }
+.dish-blinking .dish-waves { opacity: 0.95; }
 
-/* Crew outside (stylized astronauts, not real people) */
+/* Crew outside: white suits, one color stripe, dark visor with a highlight */
 .crew-outside { transition: opacity 0.6s ease; }
-.crew-shelter .crew-outside, .crew-sleep .crew-outside, .crew-awake .crew-outside, .crew-inside .crew-outside, .crew-away .crew-outside { opacity: 0; }
-.suit { fill: #f2efe9; stroke: #8f8579; stroke-width: 1.2; }
-.pack { fill: #c9c1b5; stroke: #8f8579; stroke-width: 1.2; }
-.helmet { fill: rgba(200, 225, 255, 0.35); stroke: #f2efe9; stroke-width: 2.5; }
-.astro-face { fill: #f1d2b6; }
-.eye { fill: #3a2a22; }
-.eye-closed { fill: none; stroke: #3a2a22; stroke-width: 1.2; stroke-linecap: round; display: none; }
-.mouth-smile { fill: none; stroke: #3a2a22; stroke-width: 1.2; stroke-linecap: round; }
-.mouth-yawn { fill: #5a2a22; display: none; }
+.crew-shelter .crew-outside, .crew-sleep .crew-outside, .crew-inside .crew-outside, .crew-away .crew-outside,
+.is-dusk .crew-outside, .is-night .crew-outside { opacity: 0; }
+.suit { fill: #f1f1ee; stroke: #8f8a84; stroke-width: 0.9; }
+.pack { fill: #c9c4bb; stroke: #8f8a84; stroke-width: 0.9; }
+.stripe-life { fill: var(--meter-life); }
+.stripe-power { fill: var(--meter-power); }
+.stripe-shield { fill: var(--meter-shield); }
+.helmet { fill: #f1f1ee; stroke: #8f8a84; stroke-width: 0.9; }
+.visor { fill: #1d2633; }
+.visor-dot { fill: #ffffff; }
+.visor-yawn { fill: #e8b7a0; opacity: 0; }
+.arm { stroke: #f1f1ee; stroke-width: 4.2; stroke-linecap: round; }
+.brush-handle { stroke: #8a6a4a; stroke-width: 1.6; stroke-linecap: round; }
+.brush-head { fill: #c9a46e; }
+.crate { fill: #b9874f; stroke: #6e4a26; stroke-width: 0.9; }
+.crate-line { stroke: #6e4a26; stroke-width: 0.8; }
+.torch { fill: #3b3f4a; }
+.torch-beam { fill: #fff2c4; opacity: 0.32; }
 .astro-body { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.6s ease; }
-/* Tired: the crew slumps. Exhausted: slumped, eyes shut, yawning. */
-.crew-tired .astro-body { transform: rotate(5deg) translateY(1px); }
-.crew-exhausted .astro-body { transform: rotate(9deg) translateY(2px); }
-.crew-exhausted .eye-open { display: none; }
-.crew-exhausted .eye-closed { display: inline; }
-.crew-exhausted .mouth-smile { display: none; }
-.crew-exhausted .mouth-yawn { display: inline; }
+/* Tired: the crew slumps. Exhausted: slumps further and yawns. (Fatigue on only.) */
+.crew-tired .crew-outside .astro-body { transform: rotate(5deg) translateY(1px); }
+.crew-exhausted .crew-outside .astro-body { transform: rotate(10deg) translateY(2px); }
+.crew-exhausted .crew-outside .visor-yawn { opacity: 1; }
 
-/* Weather and alarm overlays */
-.dust-haze { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
-.is-dusty .dust-haze { opacity: 0.4; }
+/* The night watch with the torch appears only during an alarm */
+.night-watch { opacity: 0; transition: opacity 0.6s ease; }
+.is-alarm .night-watch { opacity: 1; }
+
+/* Weather overlays */
 .storm-haze { fill: #ff8fb8; opacity: 0; transition: opacity 0.8s ease; }
-.is-flare .storm-haze { opacity: 0.16; }
-.is-storm .storm-haze { opacity: 0.24; }
+.is-flare .storm-haze { opacity: 0.14; }
+.is-storm .storm-haze { opacity: 0.22; }
 .flare-flash { fill: #fff3d6; opacity: 0; pointer-events: none; }
-.alarm-glow { opacity: 0; transition: opacity 0.6s ease; }
-.is-alarm .alarm-glow { opacity: 1; }
-
-/* "Sol 4" title over the picture at the start of each sol */
-.sol-title {
-  position: absolute;
-  left: 16px;
-  top: 10px;
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-}
-.sol-title-num { font-size: clamp(1.8rem, 7vw, 3rem); font-weight: 900; line-height: 1; }
-.sol-title-sub { font-size: 0.85rem; font-weight: 600; }
 
 /* ---------- Motion (only for people who have not asked for less) ---------- */
 
 @media (prefers-reduced-motion: no-preference) {
-  .crew-work .astronaut:nth-child(1) .astro-body { animation: bob 2.6s ease-in-out infinite; }
-  .crew-work .astronaut:nth-child(2) .astro-body { animation: bob 3.1s ease-in-out 0.4s infinite; }
-  .crew-work .astronaut:nth-child(3) .astro-body { animation: bob 2.8s ease-in-out 0.9s infinite; }
-  .crew-sleep .zzz { animation: drift 3s ease-in-out infinite; }
+  .crew-sleep .zzz { animation: drift-up 3s ease-in-out infinite; }
   .dish-blinking .dish-waves { animation: soft-blink 1.6s ease-in-out infinite; }
-  .is-alarm .alarm-glow { animation: glow 2.4s ease-in-out infinite; }
+  .dish-red { animation: red-blink 3s steps(1, end) infinite; }
+  .is-alarm .alarm-spill { animation: glow 2.4s ease-in-out infinite; }
   .is-alarm .beacon-glow { animation: glow 1.8s ease-in-out infinite; }
   .shield-up .shield-dome { animation: glow 3s ease-in-out infinite; }
-  /* One soft flash for a solar flare. Never repeated, never a strobe. */
-  .flash-now .flare-flash { animation: flare 1.6s ease-out 1; }
+  .twinkle { animation: twinkle 6s ease-in-out infinite; }
+  .twinkle.t1 { animation-delay: 2s; }
+  .twinkle.t2 { animation-delay: 4s; }
+  .title-mode .dust-drift { animation: dust-drift 20s ease-in-out infinite alternate; }
+  /* One soft flash for a solar flare: 600 ms, 0 to 0.35 to 0, once. Never a strobe. */
+  .flash-now .flare-flash { animation: flare 0.6s ease-out 1; }
   .sol-title.show { animation: sol-title 2.4s ease-out 1 both; }
   .card-enter { animation: card-in 0.3s ease-out; }
   .gauge-delta.show { animation: delta-rise 1.2s ease-out 1 both; }
@@ -408,125 +567,85 @@ main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 16px; }
   .gauge-delta.show { animation: fade-hold 1.2s linear 1 both; }
 }
 
-@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes drift { 0%, 100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-4px); opacity: 1; } }
+@keyframes drift-up { 0%, 100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-3px); opacity: 1; } }
 @keyframes soft-blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.95; } }
-@keyframes glow { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
-@keyframes flare { 0% { opacity: 0; } 20% { opacity: 0.35; } 100% { opacity: 0; } }
+@keyframes red-blink { 0% { opacity: 1; } 15% { opacity: 0.25; } }
+@keyframes glow { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes dust-drift { from { transform: translateX(0); } to { transform: translateX(20px); } }
+@keyframes flare { 0% { opacity: 0; } 40% { opacity: 0.35; } 100% { opacity: 0; } }
 @keyframes sol-title {
-  0% { opacity: 0; transform: translateY(8px); }
+  0% { opacity: 0; transform: translateY(6px); }
   15% { opacity: 1; transform: none; }
   75% { opacity: 1; }
   100% { opacity: 0; }
 }
 @keyframes fade-hold { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes delta-rise { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
-@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes delta-rise { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
-/* ---------- Gauges ---------- */
+/* ---------- Crew face icon (drawn by js/ui.js) ---------- */
 
-.gauges-panel { padding: 10px 14px 12px; }
-@media (max-width: 899px) { .gauges-panel .panel-title { display: none; } }
-.gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-
-.gauge { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 6px; align-items: start; }
-.gauge-icon { width: 22px; height: 22px; margin-top: 2px; transform-origin: center; }
-.gauge-lifeSupport .gauge-icon { fill: var(--meter-life); }
-.gauge-power .gauge-icon { fill: var(--meter-power); }
-.gauge-shielding .gauge-icon { fill: var(--meter-shield); }
-
-.gauge-top { display: flex; align-items: center; gap: 6px; min-height: 26px; }
-.gauge-name { font-weight: 700; font-size: 0.8rem; line-height: 1.2; }
-.gauge-value { font-family: var(--font-display); font-weight: 900; font-size: 1.3rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.gauge-low {
-  display: none;
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--danger);
-  color: #2a0b0b;
-}
-
-.gauge-bar { height: 10px; margin: 4px 0; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-.gauge-fill { height: 100%; border-radius: 999px; transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.gauge-lifeSupport .gauge-fill { background: var(--meter-life); }
-.gauge-power .gauge-fill { background: var(--meter-power); }
-.gauge-shielding .gauge-fill { background: var(--meter-shield); }
-
-/* Danger: red, striped, and a "Low" tag, so it never depends on color alone. */
-.gauge.is-low .gauge-fill {
-  background: repeating-linear-gradient(135deg, var(--danger) 0 6px, #b33a3a 6px 12px);
-}
-.gauge.is-low .gauge-low { display: inline-block; }
-.gauge.is-low .gauge-value, .gauge.is-low .gauge-help { color: var(--danger); }
-.gauge-help { display: none; }
-
-.gauge-delta {
-  position: absolute;
-  right: 0;
-  top: -14px;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 0.9rem;
-  opacity: 0;
-  pointer-events: none;
-}
-.gauge-delta.up { color: var(--ok); }
-.gauge-delta.down { color: var(--danger); }
-
-@media (min-width: 900px) {
-  .gauges { grid-template-columns: 1fr; gap: 12px; }
-  .gauge-help { display: block; }
-  .gauge-name { font-size: 0.95rem; }
-}
-
-/* ---------- Crew strip ---------- */
-
-.crew { padding: 10px 14px; }
-.crew-row { display: flex; gap: 12px; align-items: center; }
-.face { width: 44px; height: 44px; flex: none; }
-#clock-text { font-size: 0.8rem; }
-@media (min-width: 900px) { .face { width: 56px; height: 56px; } #clock-text { font-size: 0.85rem; } }
-.face-head { fill: var(--surface-3); stroke: var(--text-muted); stroke-width: 3; }
+.face-head { fill: var(--surface-3); stroke: var(--text-muted); stroke-width: 4; }
 .face-eye { fill: var(--text); }
 .face-lid { fill: var(--surface-3); }
-.face-line { fill: none; stroke: var(--text); stroke-width: 3.5; stroke-linecap: round; }
-.face-line.thin { stroke-width: 2; stroke: var(--text-muted); }
-.face-yawn { fill: var(--space); stroke: var(--text); stroke-width: 3; }
+.face-line { fill: none; stroke: var(--text); stroke-width: 5; stroke-linecap: round; }
+.face-line.thin { stroke-width: 3; stroke: var(--text-muted); }
+.face-yawn { fill: var(--space); stroke: var(--text); stroke-width: 4; }
 .face[data-level="2"] .face-head, .face[data-level="3"] .face-head { stroke: var(--danger); }
-.crew-text { font-weight: 700; margin-bottom: 4px; }
-.crew p:last-child { margin-bottom: 0; }
 
 /* ---------- The card ---------- */
 
-.card { border-top: 4px solid var(--sunset); }
+.card { border-top: 4px solid var(--sunset); padding: 14px 16px 16px; }
 .card-solar { border-top-color: #ff8fb8; }
 .card-message { border-top-color: var(--ok); }
-body.is-night .card-event { border-top-color: var(--alarm); }
+body.is-night .card-event { border-top-color: var(--alarm-red); }
 
-.card-clock { margin: 0 0 4px; font-size: 0.9rem; font-weight: 700; color: var(--sunset); }
-body.is-night .card-event .card-clock { color: var(--alarm); }
+.card-clock { margin: 0 0 2px; font-size: 0.85rem; font-weight: 700; color: var(--sunset); }
+body.is-night .card-event .card-clock { color: #ff9a80; }
 .card-solar .card-clock { color: #ff9fc4; }
-.card-title { margin: 0 0 8px; font-size: 1.55rem; line-height: 1.15; font-weight: 800; }
+.card-title { margin: 0 0 4px; font-size: 1.32rem; line-height: 1.15; font-weight: 800; }
+.card-text { font-size: 1rem; line-height: 1.4; margin: 0 0 2px; }
+
+@media (min-width: 900px) {
+  .card { padding: 18px 20px 20px; }
+  .card-title { font-size: 1.55rem; margin-bottom: 8px; }
+  .card-text { font-size: 1.05rem; line-height: 1.5; margin-bottom: 6px; }
+}
 
 .card-note {
-  font-size: 0.9rem;
+  margin: 12px 0 0;
+  font-size: 0.86rem;
   color: var(--text-muted);
   border-left: 3px solid var(--border);
   padding-left: 10px;
 }
 
+/* "Real science": a <details> disclosure. Folded on phones, open on wide screens. */
 .learn {
   background: var(--surface-2);
   border-radius: 10px;
-  padding: 12px;
-  margin: 12px 0 4px;
+  padding: 0 12px;
+  margin: 12px 0 0;
   border: 1px solid var(--border);
 }
+.learn[open] { padding-bottom: 12px; }
+.learn p { font-size: 0.95rem; }
 .learn p:last-child { margin-bottom: 0; }
-.learn-label { margin: 0 0 4px; font-size: 0.85rem; font-weight: 800; color: var(--ok); }
+.learn-label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--ok);
+  cursor: pointer;
+  list-style: none;
+}
+.learn-label::-webkit-details-marker { display: none; }
+.learn-label::before { content: "+"; display: inline-block; width: 1.2em; font-weight: 900; }
+.learn[open] .learn-label::before { content: "\2212"; }
 
 /* ---------- Log ---------- */
 
@@ -535,12 +654,47 @@ body.is-night .card-event .card-clock { color: var(--alarm); }
 .log li:last-child { border-bottom: none; }
 .log-tag { display: block; font-size: 0.78rem; color: var(--text-muted); }
 
-/* ---------- Title screen ---------- */
+/* ---------- Title screen: full-bleed night scene ---------- */
 
-.title-screen .stage-title { max-width: 900px; width: 100%; margin: 0 auto; }
-.title-panel { margin-top: -20px; position: relative; z-index: 2; box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.35); }
-@media (min-width: 900px) { .title-panel { margin-top: -64px; } }
-.game-title { font-size: clamp(2.4rem, 10vw, 3.4rem); font-weight: 900; margin-bottom: 6px; }
+.title-screen { display: block; }
+.title-stage {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: -10px;
+  height: calc(100vh - 49px);
+  height: calc(100svh - 49px);
+  min-height: 460px;
+  overflow: hidden;
+  background: #0B0E1A;
+}
+.title-stage .scene { position: absolute; inset: 0; }
+.title-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9vh 16px 6vh;
+  text-align: center;
+}
+.title-head { display: flex; flex-direction: column; align-items: center; }
+.game-title {
+  margin: 0;
+  font-family: var(--font-heavy);
+  font-weight: 900;
+  font-size: clamp(3rem, 15vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff6ea;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+}
+.title-sub { margin: 10px 0 0; font-size: 1.1rem; font-weight: 600; color: #efe4d8; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
+.title-actions { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; }
+.btn-big { min-height: 60px; font-size: 1.2rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
+.title-link { color: #e9f3ff; margin-top: 6px; }
 
 /* ---------- Mission report (end screen) ---------- */
 

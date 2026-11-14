@@ -65,7 +65,7 @@ var SOL_SHIFT_EVENTS = [
     minSol: 2,
     cooldown: 3,
     title: "3 a.m. pump fault",
-    text: "An alarm goes off at 3 in the morning. The pump that keeps fresh air moving through the base has stopped. The crew is fast asleep.",
+    text: "3 a.m.: the air pump stopped. One crew member on watch hears the alarm.",
     learn: "People on the Phoenix Mars Lander team lived on Mars time. When their body clocks matched the Mars day they slept about 6 hours. When their body clocks were out of step, they slept under 5.",
     factKey: "sleepOutOfStepHours",
     choices: [
