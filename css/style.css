@@ -558,7 +558,10 @@ details[open] .learn-label::before { content: "\2212"; }
 }
 
 /* ---------- Outpost scene (drawn by js/scene.js) ---------- */
-/* Palette from Pixel. Day and night sky colors are artistic choices. */
+/* Realistic look (the team lead's direction). Sky colors are artistic choices.
+   The Sun is on the right, so light falls from the right and shadows
+   point left. The base is lit as one group by a color filter set in
+   js/scene.js (dusk, night, dust storm). */
 
 .sky-layer { opacity: 0; transition: opacity 1.4s ease; }
 .is-day .sky-day { opacity: 1; }
@@ -566,104 +569,130 @@ details[open] .learn-label::before { content: "\2212"; }
 .dusk-band { opacity: 0; transition: opacity 1.4s ease; }
 .is-dusk .dusk-band { opacity: 1; }
 
+/* Optional NASA photo backdrops (see BACKDROP in js/scene.js) */
+.backdrop { opacity: 0; transition: opacity 1.4s ease; }
+.is-day .backdrop-day, .is-dusk .backdrop-dusk { opacity: 1; }
+
 .star { fill: #f4f1ff; }
 .stars { opacity: 0; transition: opacity 1.4s ease; }
-.is-dusk .stars { opacity: 0.25; }
+.is-dusk .stars { opacity: 0.2; }
 .is-night .stars { opacity: 1; }
 
-/* The Sun: small and pale by day; at dusk a small blue sun near the
-   horizon with its blue glow (the real Mars sunset). */
-.sun { fill: #fff3dc; transition: transform 1.4s ease, opacity 1.4s ease, fill 1.4s ease; }
+/* The Sun: a small soft disc, about two-thirds as wide as from Earth.
+   At dusk it sits low with the real blue Mars sunset glow. */
+.sun { fill: #fff6e6; transition: transform 1.4s ease, opacity 1.4s ease, fill 1.4s ease; }
+.sun-halo { opacity: 0.9; transition: transform 1.4s ease, opacity 1.4s ease; }
 .sun-corona { fill: #fff1c8; opacity: 0; transition: opacity 0.6s ease; }
-.is-dusk .sun { transform: translate(-60px, 38px); fill: #e4f1ff; }
-.is-night .sun { transform: translate(-40px, 110px); opacity: 0; }
+.is-dusk .sun, .is-dusk .sun-halo { transform: translate(-60px, 38px); }
+.is-dusk .sun { fill: #e4f1ff; }
+.is-dusk .sun-halo { opacity: 0.35; }
+.is-night .sun, .is-night .sun-halo { transform: translate(-40px, 110px); opacity: 0; }
+.is-dusty .sun, .is-dusty .sun-halo { opacity: 0.15; }
 .sun-glow { opacity: 0; transition: opacity 1.4s ease; }
 .is-dusk .sun-glow { opacity: 1; }
-.is-flare .sun-corona { opacity: 0.45; }
-.is-storm .sun-corona { opacity: 0.6; }
-.streak { stroke: #ffe3f0; stroke-width: 1.6; stroke-linecap: round; }
+.is-flare .sun-corona { opacity: 0.4; }
+.is-storm .sun-corona { opacity: 0.55; }
+.streak { stroke: #ffe3f0; stroke-width: 1.4; stroke-linecap: round; }
 .particle-streaks { opacity: 0; transition: opacity 0.6s ease; }
-.is-storm .particle-streaks { opacity: 0.75; }
+.is-storm .particle-streaks { opacity: 0.6; }
 
-/* Land in three bands. Each phase has its own colors. */
-.ridge-far { fill: #C97A55; transition: fill 1.4s ease; }
-.ridge-mid { fill: #A85A38; transition: fill 1.4s ease; }
-.ground { fill: #7A3A22; transition: fill 1.4s ease; }
-.mound { fill: #844128; transition: fill 1.4s ease; }
-.rock-fg { fill: #4A2214; transition: fill 1.4s ease; }
-.contact-shadow { fill: #000; opacity: 0.25; }
+/* Land: the far ridge is pale and low-contrast (haze), nearer land is
+   darker and warmer. */
+.ridge-far { fill: #c99474; transition: fill 1.4s ease; }
+.ridge-mid { fill: #a35e3c; transition: fill 1.4s ease; }
+.ground { fill: #7e4127; transition: fill 1.4s ease; }
+.haze { opacity: 0; transition: opacity 1.4s ease; }
+.is-day .haze-day { opacity: 1; }
+.is-dusk .haze-dusk { opacity: 1; }
+.is-dusk .ridge-far { fill: #5d4552; }
+.is-dusk .ridge-mid { fill: #46302f; }
+.is-dusk .ground { fill: #3a221d; }
+.is-night .ridge-far { fill: #1c1924; }
+.is-night .ridge-mid { fill: #1f171b; }
+.is-night .ground { fill: #241612; }
 
-/* Ground details: quiet lines a shade darker than the ground */
-.dune-line { fill: none; stroke: #6a3019; stroke-width: 1.2; opacity: 0.55; transition: stroke 1.4s ease; }
-.track { fill: none; stroke: #5e2a17; stroke-width: 2; stroke-dasharray: 3 3; opacity: 0.5; transition: stroke 1.4s ease; }
-.cable { fill: none; stroke: #2d2a2e; stroke-width: 1.2; opacity: 0.8; }
-.hatch { fill: #4d4f57; stroke: #2d2a2e; stroke-width: 0.8; }
-.ground-lip { fill: #64301b; transition: fill 1.4s ease; }
-.is-dusk .dune-line, .is-dusk .track { stroke: #2a1714; }
-.is-dusk .ground-lip { fill: #321c19; }
-.is-night .dune-line, .is-night .track { stroke: #170d0b; }
-.is-night .ground-lip { fill: #1d110e; }
+/* Ground details */
+.dune-line { fill: none; stroke: #6a3019; stroke-width: 1.1; opacity: 0.45; transition: stroke 1.4s ease; }
+.track { fill: none; stroke: #5e2a17; stroke-width: 1.8; stroke-dasharray: 2.5 2.5; opacity: 0.45; transition: stroke 1.4s ease; }
+.cable { fill: none; stroke: #2d2a2e; stroke-width: 1.1; opacity: 0.8; }
+.hatch { fill: #5b5e66; stroke: #2d2a2e; stroke-width: 0.7; }
+.rock-fg { fill: #5a2c18; transition: fill 1.4s ease; }
+.rock-lit { fill: none; stroke: #b8754e; stroke-width: 0.8; opacity: 0.7; }
+.rock-shadow { fill: #000; opacity: 0.22; }
+.ground-lip { fill: #5f2f1b; transition: fill 1.4s ease; }
+.is-dusk .dune-line, .is-dusk .track { stroke: #24130f; }
+.is-dusk .rock-fg { fill: #2a1813; }
+.is-dusk .rock-lit { stroke: #8a5a5c; opacity: 0.4; }
+.is-dusk .ground-lip { fill: #2c1915; }
+.is-night .dune-line, .is-night .track { stroke: #130b09; }
+.is-night .rock-fg { fill: #1a100d; }
+.is-night .rock-lit { opacity: 0; }
+.is-night .rock-shadow { opacity: 0.1; }
+.is-night .ground-lip { fill: #170e0b; }
 .is-night .hatch { fill: #2c2d33; }
-.is-dusk .ridge-far { fill: #5A3A4A; }
-.is-dusk .ridge-mid { fill: #4a2f35; }
-.is-dusk .ground, .is-dusk .mound { fill: #3E2420; }
-.is-dusk .rock-fg { fill: #241412; }
-.is-night .ridge-far { fill: #1F1A26; }
-.is-night .ridge-mid { fill: #221a20; }
-.is-night .ground, .is-night .mound { fill: #2A1A16; }
-.is-night .rock-fg { fill: #3a2620; }
 
-/* Dust storm: an ochre layer over the far ridge first, then a light haze. */
-.ridge-dust { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
-.is-dusty .ridge-dust { opacity: 0.6; }
-.dust-haze { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
-.is-dusty .dust-haze { opacity: 0.2; }
-.drift { fill: #d9a77a; opacity: 0.07; }
-.dust-drift { opacity: 0; }
-.title-mode .dust-drift { opacity: 1; }
+/* Shadows: soft contact shadow where things meet the ground, and a cast
+   shadow pointing away from the Sun: short by day, long at dusk, none at night. */
+.contact-shadow { fill: #000; opacity: 0.34; }
+.cast-shadow {
+  fill: #2a1208;
+  opacity: 0.32;
+  transform-box: fill-box;
+  transform-origin: right center;
+  transition: transform 1.4s ease, opacity 1.4s ease;
+}
+.is-dusk .cast-shadow { transform: scaleX(2.4); opacity: 0.38; }
+.is-night .cast-shadow { opacity: 0; }
+.is-dusty .cast-shadow { opacity: 0.08; }
 
-/* Warm window light and the alarm light, spilling onto the ground.
-   At night these are the only warm lights. */
+/* Warm window light and the alarm light on the ground */
 .window-spill { opacity: 0; transition: opacity 1.2s ease; }
-.is-dusk .window-spill { opacity: 0.45; }
+.is-dusk .window-spill { opacity: 0.4; }
 .is-night .window-spill { opacity: 0.85; }
 .alarm-spill { opacity: 0; transition: opacity 0.6s ease; }
 .is-alarm .alarm-spill { opacity: 1; }
 
-/* Solar panels: blue glass, thin light top edge, three cell lines */
-.panel-leg { stroke: #6b6f78; stroke-width: 2.2; }
-.panel { fill: #2b4d73; stroke: #1b3350; stroke-width: 0.8; transition: fill 1.4s ease; }
-.panel-cell { stroke: #8fb4d8; stroke-width: 0.6; opacity: 0.55; }
-.panel-edge { stroke: #dfeeff; stroke-width: 1.1; stroke-linecap: round; }
+/* Dust that settles on lower surfaces */
+.dust-coat { pointer-events: none; }
+
+/* Solar arrays: dark cells, thin silver frame, light top edge */
+.panel-leg { stroke: #8a9099; stroke-width: 1.4; }
+.panel-leg.thin { stroke-width: 0.8; }
+.panel-cell { stroke: #6c86a8; stroke-width: 0.45; opacity: 0.6; }
+.panel-frame { fill: none; stroke: #c3c9d0; stroke-width: 0.8; }
+.panel-edge { stroke: #f1f5fa; stroke-width: 1; stroke-linecap: round; }
 .panel-dust { opacity: 0; transition: opacity 0.8s ease; }
-.panels-dusty .panel-dust { opacity: 0.92; }
-.is-dusk .panel, .is-night .panel { fill: #172a42; }
-.is-night .panel-edge { stroke: #6f7d90; }
+.panels-dusty .panel-dust { opacity: 0.9; }
 
-/* Habitat: light metal by day, darker at dusk and night, windows warm */
-.hab-body, .hab-airlock { fill: #D9DDE2; stroke: #9aa0a8; stroke-width: 1.4; transition: fill 1.4s ease; }
-.hab-band { fill: #b8bec6; transition: fill 1.4s ease; }
-.hab-door { fill: #8c939c; }
-.is-dusk .hab-body, .is-dusk .hab-airlock { fill: #8b8f99; }
-.is-dusk .hab-band { fill: #6f747d; }
-.is-night .hab-body, .is-night .hab-airlock { fill: #3b3f4a; stroke: #565b66; }
-.is-night .hab-band { fill: #30333c; }
-.hab-window { fill: #9ED0D8; stroke: #9aa0a8; stroke-width: 1.4; transition: fill 1s ease; }
-.is-dusk .hab-window, .is-night .hab-window, .crew-shelter .hab-window { fill: #FFC46B; }
-.is-night .hab-door { fill: #FFC46B; opacity: 0.55; }
+/* Habitat: woven fabric skin, metal airlock, regolith berm */
+.hab-body { stroke: #8f8676; stroke-width: 1; }
+.hab-airlock { stroke: #6f7680; stroke-width: 1; }
+.hab-door { fill: #5f666f; stroke: #474d55; stroke-width: 0.8; }
+.door-port { fill: #9ed0d8; opacity: 0.7; }
+.is-night .door-port { fill: #FFC46B; opacity: 1; }
+.seam { fill: none; stroke: #8a806e; stroke-width: 0.6; opacity: 0.55; }
+.hab-window { fill: #4c6a73; }
+.hab-window-frame { fill: none; stroke: #6f7680; stroke-width: 1.4; }
+.berm { stroke: #5a2c18; stroke-width: 0.6; }
+.berm-grain { fill: #c2805a; opacity: 0.7; }
 
-/* Heads in the window: sleeping (night), or just inside (shelter, fatigue off) */
-.window-crew, .zzz { opacity: 0; transition: opacity 0.6s ease; }
-.crew-sleep .window-crew, .crew-inside .window-crew, .crew-shelter .window-crew { opacity: 1; }
-.wh-head { fill: #6a4a3a; }
-.wh-eyes { fill: none; stroke: #2a1a14; stroke-width: 1.2; stroke-linecap: round; opacity: 0; }
-.crew-sleep .wh-eyes { opacity: 1; }
+/* Lights (drawn outside the dimmed base, so they stay bright) */
+.window-glow { fill: #FFC46B; opacity: 0; transition: opacity 1s ease; }
+.is-dusk .window-glow, .is-night .window-glow, .crew-shelter .window-glow { opacity: 1; }
+.window-crew, .zzz, .bunk-rail { opacity: 0; transition: opacity 0.6s ease; }
+.crew-sleep .window-crew, .crew-shelter .window-crew { opacity: 1; }
+.crew-sleep .bunk-rail, .crew-shelter .bunk-rail, .crew-inside .bunk-rail { opacity: 0.5; }
+.bunk-rail { stroke: #7a4a1e; stroke-width: 1; }
+.bag { opacity: 0.85; }
+.bag-life { fill: #3c7f77; }
+.bag-power { fill: #9b7a2c; }
+.bag-shield { fill: #5f548f; }
+.bag-hood { fill: #2b2420; opacity: 0.55; }
 .zzz { fill: #fff6e0; font-family: var(--font-display); font-weight: 900; font-size: 15px; }
 .crew-sleep .zzz { opacity: 0.95; }
-/* During an alarm one crew member is on watch at the door, so only two heads show. */
+/* During an alarm one crew member is on watch at the door, so one bag is empty. */
 .is-alarm .head-1 { opacity: 0; }
 
-/* Roof beacon: red during an alarm */
 .beacon { fill: #6d5a4a; transition: fill 0.3s ease; }
 .is-alarm .beacon { fill: var(--alarm-red); }
 .beacon-glow { fill: var(--alarm-red); opacity: 0; }
@@ -671,69 +700,92 @@ details[open] .learn-label::before { content: "\2212"; }
 
 /* Storm shelter shield */
 .shield-dome {
-  fill: rgba(150, 200, 255, 0.13);
+  fill: rgba(150, 200, 255, 0.12);
   stroke: #a9d2ff;
-  stroke-width: 2;
-  stroke-dasharray: 8 5;
+  stroke-width: 1.6;
+  stroke-dasharray: 7 4;
   opacity: 0;
   transition: opacity 0.6s ease;
 }
 .shield-up .shield-dome { opacity: 1; }
 
-/* Greenhouse: glass, plants, and a soft inner green glow (strong at night) */
-.gh-glass { fill: rgba(158, 208, 216, 0.28); stroke: #cfe6ef; stroke-width: 1.3; }
-.gh-light { opacity: 0.35; transition: opacity 0.8s ease; }
+/* Greenhouse tube */
+.gh-glass { stroke: #d6e8e8; stroke-width: 0.9; }
+.gh-rib { stroke: #c8dada; stroke-width: 0.7; opacity: 0.7; }
+.gh-light { opacity: 0.25; transition: opacity 0.8s ease; }
 .is-dusk .gh-light { opacity: 0.7; }
 .is-night .gh-light { opacity: 1; }
 .greenhouse-dark .gh-light { opacity: 0; }
-.plant { fill: #4fae5a; stroke: #2f7a3a; stroke-width: 0.7; transition: fill 0.8s ease; }
+.plant { fill: #4f9a55; stroke: #2f6a36; stroke-width: 0.5; transition: fill 0.8s ease; }
 .greenhouse-dark .plant { fill: #3b5a3a; }
-.gh-frame { stroke: #cfe6ef; stroke-width: 1; }
 
-/* Comm dish: slow red light, and waves while a message to Earth is waiting */
-.dish-mast { stroke: #9aa0a8; stroke-width: 2.6; }
-.dish-bowl { fill: #D9DDE2; stroke: #9aa0a8; stroke-width: 1.3; transition: fill 1.4s ease; }
-.is-night .dish-bowl { fill: #5b606b; }
+/* Comm dish on a tripod mast */
+.dish-mast { fill: none; stroke: #8a9099; stroke-width: 1.4; }
+.dish-mast.thin { stroke-width: 0.8; }
+.dish-bowl { stroke: #6f7680; stroke-width: 0.8; }
+.dish-feed { stroke: #8a9099; stroke-width: 0.9; }
 .dish-red { fill: #ff4a3a; }
-.dish-wave { fill: none; stroke: var(--sunset); stroke-width: 1.8; stroke-linecap: round; }
+.dish-wave { fill: none; stroke: var(--sunset); stroke-width: 1.6; stroke-linecap: round; }
 .dish-waves { opacity: 0; transition: opacity 0.4s ease; }
 .dish-blinking .dish-waves { opacity: 0.95; }
 
-/* Crew outside: white suits, one color stripe, dark visor with a highlight */
+/* Crew in surface suits. No faces: the visor reflects the sky. */
 .crew-outside { transition: opacity 0.6s ease; }
 .crew-shelter .crew-outside, .crew-sleep .crew-outside, .crew-inside .crew-outside, .crew-away .crew-outside,
 .is-dusk .crew-outside, .is-night .crew-outside { opacity: 0; }
-.suit { fill: #f1f1ee; stroke: #8f8a84; stroke-width: 0.9; }
-.pack { fill: #c9c4bb; stroke: #8f8a84; stroke-width: 0.9; }
+.suit { stroke: #8f8a84; stroke-width: 0.5; }
+.pack { stroke: #6f7680; stroke-width: 0.5; }
+.boot { fill: #5d5952; }
+.glove { fill: #8b847a; }
+.joint { stroke: #b9b3a8; stroke-width: 0.9; }
+.chest-unit { fill: #8f969f; stroke: #5f666f; stroke-width: 0.4; }
 .stripe-life { fill: var(--meter-life); }
 .stripe-power { fill: var(--meter-power); }
 .stripe-shield { fill: var(--meter-shield); }
-.helmet { fill: #f1f1ee; stroke: #8f8a84; stroke-width: 0.9; }
-.visor { fill: #1d2633; }
-.visor-dot { fill: #ffffff; }
-.visor-yawn { fill: #e8b7a0; opacity: 0; }
-.arm { stroke: #f1f1ee; stroke-width: 4.2; stroke-linecap: round; }
-.brush-handle { stroke: #8a6a4a; stroke-width: 1.6; stroke-linecap: round; }
+.helmet { stroke: #8f8a84; stroke-width: 0.5; }
+.visor { stroke: #3a3328; stroke-width: 0.4; }
+.visor-hl { fill: none; stroke: #f3c9a1; stroke-width: 1.1; stroke-linecap: round; opacity: 0.9; transition: stroke 1.4s ease; }
+.is-dusk .visor-hl { stroke: #9ccaf5; }
+.is-night .visor-hl { stroke: #FFC46B; opacity: 0.6; }
+.visor-dot { fill: #ffffff; opacity: 0.9; }
+.arm { stroke: #e9e5dd; stroke-width: 4; stroke-linecap: round; }
+.brush-handle { stroke: #8a6a4a; stroke-width: 1.4; stroke-linecap: round; }
 .brush-head { fill: #c9a46e; }
-.crate { fill: #b9874f; stroke: #6e4a26; stroke-width: 0.9; }
-.crate-line { stroke: #6e4a26; stroke-width: 0.8; }
+.crate { fill: #a4835a; stroke: #6e4a26; stroke-width: 0.7; }
+.crate-line { stroke: #6e4a26; stroke-width: 0.6; }
 .torch { fill: #3b3f4a; }
-/* The torch: its color and fade come from a gradient in js/scene.js */
-.torch-beam, .torch-pool { opacity: 1; }
+.arm-stretch { opacity: 0; }
 .astro-body { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.6s ease; }
-/* Tired: the crew slumps. Exhausted: slumps further and yawns. (Fatigue on only.) */
+/* Tired: the crew slumps. Exhausted: slumps further and stretches one arm
+   up in a big tired stretch. (Fatigue on only; ui.js never sets these with it off.) */
 .crew-tired .crew-outside .astro-body { transform: rotate(5deg) translateY(1px); }
-.crew-exhausted .crew-outside .astro-body { transform: rotate(10deg) translateY(2px); }
-.crew-exhausted .crew-outside .visor-yawn { opacity: 1; }
+.crew-exhausted .crew-outside .astro-body { transform: rotate(9deg) translateY(2px); }
+.crew-exhausted .crew-outside .arm-stretch { opacity: 1; }
 
 /* The night watch with the torch appears only during an alarm */
 .night-watch { opacity: 0; transition: opacity 0.6s ease; }
 .is-alarm .night-watch { opacity: 1; }
+.torch-beam, .torch-pool { opacity: 1; }
+
+/* Dust motes in the air */
+.mote { fill: #f0d3b0; opacity: 0.55; }
+.is-dusk .mote { fill: #c9a5a0; opacity: 0.35; }
+.is-night .motes { opacity: 0.15; }
+
+/* Dust storm: a brown-out. The far ridge goes first, then a thick haze;
+   js/scene.js also dims the base. */
+.ridge-dust { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
+.is-dusty .ridge-dust { opacity: 0.75; }
+.dust-haze { fill: #a8774f; opacity: 0; transition: opacity 1s ease; }
+.is-dusty .dust-haze { opacity: 0.42; }
+.drift { fill: #d9a77a; opacity: 0.07; }
+.dust-drift { opacity: 0; }
+.title-mode .dust-drift { opacity: 1; }
 
 /* Weather overlays */
 .storm-haze { fill: #ff8fb8; opacity: 0; transition: opacity 0.8s ease; }
-.is-flare .storm-haze { opacity: 0.14; }
-.is-storm .storm-haze { opacity: 0.22; }
+.is-flare .storm-haze { opacity: 0.12; }
+.is-storm .storm-haze { opacity: 0.2; }
 .flare-flash { fill: #fff3d6; opacity: 0; pointer-events: none; }
 
 /* ---------- Motion (only for people who have not asked for less) ---------- */
@@ -749,6 +801,8 @@ details[open] .learn-label::before { content: "\2212"; }
   .twinkle.t1 { animation-delay: 2s; }
   .twinkle.t2 { animation-delay: 4s; }
   .title-mode .dust-drift { animation: dust-drift 20s ease-in-out infinite alternate; }
+  /* Dust motes drift slowly with the wind (one transform on one group: cheap). */
+  .motes { animation: motes-drift 40s linear infinite alternate; }
   /* One soft flash for a solar flare: 600 ms, 0 to 0.35 to 0, once. Never a strobe. */
   .flash-now .flare-flash { animation: flare 0.6s ease-out 1; }
   .sol-title.show { animation: sol-title 2.4s ease-out 1 both; }
@@ -770,6 +824,7 @@ details[open] .learn-label::before { content: "\2212"; }
 @keyframes glow { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes dust-drift { from { transform: translateX(0); } to { transform: translateX(20px); } }
+@keyframes motes-drift { from { transform: translate(0, 0); } to { transform: translate(-36px, -6px); } }
 @keyframes flare { 0% { opacity: 0; } 40% { opacity: 0.35; } 100% { opacity: 0; } }
 @keyframes sol-title {
   0% { opacity: 0; transform: translateY(6px); }

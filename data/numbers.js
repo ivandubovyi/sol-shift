@@ -119,6 +119,14 @@ var SOL_SHIFT_NUMBERS = {
     note: "NASA JPL news: 'The sun dips to a Martian horizon in a blue-tinged sky' and 'Martian sunsets make the blue near the sun's part of the sky much more prominent'. NASA Science PIA19400 explains that fine dust lets blue light through more efficiently. Curiosity Mastcam, sol 956 (15 April 2015). Checked 2026-11-15. The game's day and night sky colors are artistic choices, not measurements."
   },
 
+  sunSizeFromMars: {
+    value: 0.67, unit: "times as wide as the Sun looks from Earth", kind: "real-world", status: "verified",
+    source: "https://science.nasa.gov/solar-system/planets/mars/what-does-a-sunrise-sunset-look-like-on-mars/",
+    display: "about two-thirds as wide as it looks from Earth",
+    label: "How big the Sun looks from Mars",
+    note: "NASA Science, 'What Do Sunrises and Sunsets Look Like on Mars?': the Sun 'appears only about two-thirds the size we see when we watch sunsets here on Earth', because Mars is farther from the Sun. Checked 2026-11-15. The game draws its Sun at this size compared with an Earth-sized Sun of the same drawing scale."
+  },
+
   // Derived from the two sleep numbers above: 1 - 4.91 / 5.98 = 0.179.
   // The game uses it as "how much less rest a fully out-of-step crew gets".
   // Using a lab sleep number as a game rest number is a game simplification.

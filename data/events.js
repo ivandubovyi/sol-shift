@@ -378,8 +378,8 @@ var SOL_SHIFT_EVENTS = [
     cooldown: 5,
     title: "Dust cloud on the way",
     text: "A big cloud of dust is blowing toward the base. Tomorrow the sky will be dark and the solar panels will make less power.",
-    learn: "Mars gets only about 43 percent of the sunlight Earth gets, so a dusty sky makes power even harder to collect.",
-    factKey: "sunlightVsEarth",
+    learn: "Mars is farther from the Sun than Earth is, so from Mars the Sun looks only about two-thirds as wide. With a weaker Sun, a dusty sky makes power even harder to collect.",
+    factKey: "sunSizeFromMars",
     choices: [
       {
         label: "Fill the batteries: greenhouse lights off today",

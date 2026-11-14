@@ -58,3 +58,9 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 ## Milestone 6 (Nov 15, 2026)
 
 - **Visual fixes.** An AI assistant (Claude) changed the code for three fixes the team asked for: the night-watch torch is now a soft warm cone aimed at a pump hatch on the ground, the empty ground got quiet detail (dune lines, tracks to the door, a power cable, small rocks, a darker front edge) and a lower horizon on wide screens, and the crew is drawn a little larger with a closer phone camera. All drawn in code; no images or fonts were added. No balance numbers were changed.
+
+## Milestone 7 (Nov 15, 2026)
+
+- **Realistic look.** The move from a cartoon look to a realistic Mars was the team lead's direction. An AI assistant (Claude) redrew the scene in code: a NASA-style inflatable habitat with a regolith berm, flat solar arrays, a greenhouse tube and a dish on a mast, one-direction lighting with cast and contact shadows, distance haze, drifting dust motes, a dust-storm brown-out, and suited crew with reflective visors and no faces. All of the art is code-drawn SVG and CSS. No images were downloaded or generated, and no fonts were added.
+- **Research.** The AI assistant read NASA pages and checked file sizes (without downloading) for possible NASA photo backdrops, and added a verified fact about how big the Sun looks from Mars. A `BACKDROP` setting in `js/scene.js` is ready for a photo if the team approves one.
+- **Game rules unchanged.** No balance numbers were changed.

@@ -50,6 +50,10 @@ The outpost scene fills the whole screen; the page never scrolls. Everything els
 
 ## The outpost scene
 
+**Realistic look (milestone 7, the team lead's direction).** The base follows real NASA surface-habitat ideas: an inflatable fabric module with a metal airlock, a shelter berm of piled soil (regolith) for radiation protection, flat solar arrays on low frames, a greenhouse tube and a dish on a tripod mast. Everything is shaded from one Sun direction, has a soft contact shadow, and casts a shadow away from the Sun (short by day, long at dusk, none at night). The whole base is lit together by a cheap color filter for dusk, night and dust storms; window lights are drawn outside it so they stay bright. Haze makes the far ridge pale, dust motes drift in the air, and the Sun is drawn about two-thirds as wide as it would look from Earth (`sunSizeFromMars` in `data/numbers.js`). The crew wear suits with backpacks, gloves and boots, and gold-tinted visors that reflect the sky; there are no faces. Tired crews slump; exhausted crews stretch one arm up.
+
+**Adding a NASA photo backdrop later.** In `js/scene.js`, `BACKDROP` has a `day` and a `dusk` slot. Each takes `src` (a file in the project), `credit` (exactly as NASA gives it) and `source` (the NASA page). With `src` empty, the drawn sky and ridges show. The photo sits behind the ground and the base. If you add one, also list it on the Sources screen.
+
 The scene is drawn in code by `js/scene.js` (SVG shapes, no image files, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game. The framing, palette and crew poses follow art direction from Pixel, the team's AI designer bot.
 
 | What happens in the game | What the picture shows |

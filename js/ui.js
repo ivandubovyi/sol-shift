@@ -532,6 +532,7 @@
     if (url.indexOf("nasa-rover-results") !== -1) { return "NASA news release on Curiosity's radiation measurements"; }
     if (url.indexOf("serene-sundown") !== -1) { return "NASA JPL, Curiosity rover views serene sundown on Mars"; }
     if (url.indexOf("steady-temperatures") !== -1) { return "NASA photojournal, Steady temperatures at Mars' Gale Crater"; }
+    if (url.indexOf("what-does-a-sunrise-sunset") !== -1) { return "NASA Science, What do sunrises and sunsets look like on Mars?"; }
     return url;
   }
 
