@@ -77,3 +77,8 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **This replaces two earlier statements.** "All shapes are CSS or SVG written in code" and "No fonts, images or sounds are downloaded" were true when written. From this milestone the game also contains the two NASA photos and the one font listed above. There are still no AI-generated images, audio or video.
 - **Dates corrected.** The headings for milestones 2 to 7 above first said Nov 15, 2026 by mistake. They were corrected to Nov 14, 2026, the date of every commit in the git history. No other words in those entries were changed.
 - **Game rules unchanged.** No balance numbers were changed.
+
+## Where the idea came from (added Nov 14, 2026)
+
+- The crew sleep angle in Sol Shift was proposed by Spark, one of the AI assistants (Claude), in the brainstorming described under "What AI did". The team lead picked the project.
+- Nov 14, 2026: the team lead asked the Philadelphia Local Lead at the 2 PM mentor check-in whether an AI-suggested angle (crew sleep) was allowed under the SI rule, and was told it is allowed.
