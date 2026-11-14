@@ -1,0 +1,154 @@
+<!doctype html>
+<!--
+  Sol Shift: a Mars base game where the scarcest resource is crew sleep.
+  NASA Space Apps Challenge 2026, Challenge #3 "Build a Junior Astronaut Mission Trainer".
+
+  AI DISCLOSURE: the code in this project was written by an AI assistant
+  (Claude, made by Anthropic) from the team's spec, and reviewed by the team.
+  See AI-USE.md. No AI-generated images are used: every shape is CSS or
+  inline SVG written in code.
+
+  Open this file directly in a browser. No server, account or download needed.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sol Shift</title>
+  <meta name="description" content="Run a Mars base for 30 sols. Keep life support, power and shielding up, and keep your crew rested enough to do careful work.">
+  <!-- AI disclosure in metadata, as the Space Apps rules ask for SI-generated code. -->
+  <meta name="generator" content="Code written with an AI assistant (Claude by Anthropic). See AI-USE.md.">
+  <meta name="ai-disclosure" content="Code AI-generated (Claude by Anthropic) from the team's spec. No AI-generated images.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">Sol Shift</div>
+    <div class="topbar-status" id="topbar-status" hidden>
+      <span class="chip" id="sol-chip">Sol 1 of 30</span>
+      <span class="chip" id="phase-chip">Day</span>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- START SCREEN -->
+    <section id="start-screen" class="screen">
+      <div class="panel intro">
+        <h1>Sol Shift</h1>
+        <p class="lead">You are in charge of a small base on Mars. Keep it running for 30 sols until the next ship arrives.</p>
+        <p>A <strong>sol</strong> is one day on Mars. It is about 24 hours and 40 minutes long, a little longer than a day on Earth.</p>
+        <p>Keep three things from running out:</p>
+        <ul class="intro-list">
+          <li><span class="dot dot-life"></span><strong>Life support:</strong> air, water and food.</li>
+          <li><span class="dot dot-power"></span><strong>Power:</strong> electricity from solar panels.</li>
+          <li><span class="dot dot-shield"></span><strong>Shielding:</strong> protection from radiation, invisible energy from the Sun and space that can harm the body.</li>
+        </ul>
+        <p>And watch your crew. Tired people make more mistakes, and mistakes cost life support.</p>
+        <button class="btn btn-primary" id="start-button" type="button">Start the mission</button>
+        <button class="btn btn-quiet" type="button" data-open-sources>Where do the facts come from?</button>
+      </div>
+    </section>
+
+    <!-- GAME SCREEN -->
+    <section id="game-screen" class="screen" hidden>
+
+      <div class="status-column">
+        <!-- The three meters -->
+        <div class="panel">
+          <h2 class="panel-title">Base</h2>
+          <div id="meters"></div>
+        </div>
+
+        <!-- The crew: tiredness is hidden, shown as a face and words -->
+        <div class="panel crew">
+          <h2 class="panel-title">Crew</h2>
+          <div class="crew-row">
+            <svg id="crew-face" class="face" viewBox="0 0 100 100" role="img" aria-label="Crew face"></svg>
+            <div>
+              <p id="crew-text" class="crew-text"></p>
+              <p id="clock-text" class="small muted"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <!-- The card the player must answer -->
+        <article class="panel card" id="card" aria-live="polite">
+          <p class="card-clock" id="card-clock"></p>
+          <h2 class="card-title" id="card-title"></h2>
+          <p id="card-text"></p>
+          <p class="card-note" id="card-note" hidden></p>
+          <div class="learn" id="card-learn" hidden>
+            <p class="learn-label">Real science</p>
+            <p id="card-learn-text"></p>
+            <p class="small" id="card-learn-source"></p>
+          </div>
+          <div class="choices" id="choices"></div>
+        </article>
+
+        <!-- Mission log -->
+        <div class="panel log-panel">
+          <h2 class="panel-title">Mission log</h2>
+          <ol class="log" id="log"></ol>
+        </div>
+    </section>
+
+    <!-- END SCREEN -->
+    <section id="end-screen" class="screen" hidden>
+      <div class="panel end">
+        <p class="card-clock" id="end-sol"></p>
+        <h1 id="end-title"></h1>
+        <p id="end-text"></p>
+        <div class="learn">
+          <p class="learn-label">Real science</p>
+          <p id="end-fact"></p>
+          <p class="small" id="end-source"></p>
+        </div>
+        <div id="end-hits-box">
+          <h2 class="panel-title">What used it up the most</h2>
+          <ol class="hits" id="end-hits"></ol>
+        </div>
+        <button class="btn btn-primary" id="again-button" type="button">Play again</button>
+        <button class="btn btn-quiet" type="button" data-open-sources>Sources</button>
+      </div>
+    </section>
+
+    <!-- SOURCES SCREEN -->
+    <section id="sources-screen" class="screen" hidden>
+      <div class="panel sources">
+        <h1>Where the facts come from</h1>
+        <p>Real facts in this game, each checked on the page linked:</p>
+        <ul class="source-list" id="source-list"></ul>
+
+        <h2 class="panel-title">Solar storms</h2>
+        <p id="donki-text"></p>
+
+        <h2 class="panel-title">Game numbers</h2>
+        <p>How much each choice costs, how fast meters drop, and how tiredness turns into mistakes are game-design choices made to keep the game fair and fun. They are not NASA facts. They are listed in data/numbers.js with the label "game-design".</p>
+
+        <h2 class="panel-title">Made with AI help</h2>
+        <p>The code for this game was written by an AI assistant (Claude, by Anthropic) from the team's plan. There are no AI-generated pictures in the game. See AI-USE.md.</p>
+
+        <button class="btn btn-primary" id="sources-back" type="button">Back</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <button class="link-button" type="button" data-open-sources>Sources</button>
+    <span>Solar storms: NASA DONKI snapshot, May 2024. Not live data.</span>
+    <span>Code written with AI help.</span>
+  </footer>
+
+  <!-- Data first, then the rules, then the page code. Plain scripts, so double-clicking index.html works. -->
+  <script src="data/numbers.js"></script>
+  <script src="data/events.js"></script>
+  <script src="data/outcomes.js"></script>
+  <script src="data/space-weather.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

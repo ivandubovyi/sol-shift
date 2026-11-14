@@ -1,0 +1,287 @@
+/*
+  Sol Shift: styles.
+  NOTE: this file was written by an AI assistant (Claude). See AI-USE.md.
+
+  Colors are "tokens" (CSS variables) defined once at the top, so the whole
+  look can change in one place. The game uses a dark mission-control look.
+  Phones first: one column. Wider screens get two columns.
+*/
+
+:root {
+  /* Surfaces, from the page background up to raised panels */
+  --surface-0: #14100f;
+  --surface-1: #1e1816;
+  --surface-2: #2a211e;
+  --surface-3: #3a2d28;
+  --border: #4a3a33;
+
+  /* Text */
+  --text: #f1e6df;
+  --text-muted: #b9a79c;
+
+  /* Accents */
+  --mars: #e0703f;          /* dusty Mars orange */
+  --mars-strong: #f08a55;
+  --night: #7f9cf5;         /* night phase accent */
+  --danger: #ff6b6b;
+  --ok: #7bd389;
+
+  /* Meter colors */
+  --meter-life: #5ec4b6;
+  --meter-power: #f2c14e;
+  --meter-shield: #9c8cf2;
+
+  --radius: 14px;
+  --tap: 56px;              /* minimum height for anything you tap */
+}
+
+* { box-sizing: border-box; }
+
+/* Anything with the hidden attribute stays hidden, even if a rule below sets display. */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+/* At night, the accent turns blue. */
+body.is-night { --mars: var(--night); --mars-strong: #a3b8ff; }
+
+a { color: var(--mars-strong); }
+
+h1 { font-size: 1.7rem; line-height: 1.2; margin: 0 0 12px; }
+p { margin: 0 0 12px; }
+
+.small { font-size: 0.85rem; }
+.muted { color: var(--text-muted); }
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { font-weight: 700; letter-spacing: 0.04em; color: var(--mars-strong); }
+
+.topbar-status { display: flex; gap: 6px; }
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Layout ---------- */
+
+main { max-width: 1040px; margin: 0 auto; padding: 16px; }
+
+.screen { display: grid; gap: 16px; }
+.screen[hidden] { display: none; }
+
+/* The game screen has three parts: the card, the status (meters and crew), and the log.
+   Phones: one column, card on top so the decision is the first thing you see.
+   Wide screens: status on the left, card and log on the right. */
+#game-screen {
+  grid-template-columns: 1fr;
+  grid-template-areas: "card" "status" "log";
+}
+#card { grid-area: card; }
+.status-column { grid-area: status; display: grid; gap: 16px; align-content: start; }
+.log-panel { grid-area: log; }
+
+@media (min-width: 800px) {
+  #game-screen {
+    grid-template-columns: 320px 1fr;
+    grid-template-areas: "status card" "status log";
+    align-items: start;
+  }
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.panel-title {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.intro, .end, .sources { max-width: 640px; margin: 0 auto; width: 100%; }
+.lead { font-size: 1.1rem; }
+
+.intro-list { padding-left: 0; list-style: none; margin: 0 0 12px; }
+.intro-list li { margin-bottom: 8px; padding-left: 22px; position: relative; }
+.dot { position: absolute; left: 0; top: 0.45em; width: 12px; height: 12px; border-radius: 50%; }
+.dot-life { background: var(--meter-life); }
+.dot-power { background: var(--meter-power); }
+.dot-shield { background: var(--meter-shield); }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 16px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--surface-3); }
+.btn:focus-visible { outline: 3px solid var(--mars-strong); outline-offset: 2px; }
+
+.btn-primary {
+  background: var(--mars);
+  border-color: var(--mars);
+  color: var(--surface-0);
+  font-weight: 700;
+  text-align: center;
+}
+.btn-primary:hover { background: var(--mars-strong); }
+
+.btn-quiet { background: transparent; text-align: center; }
+
+.btn-choice { display: flex; flex-direction: column; gap: 4px; }
+.choice-label { font-weight: 700; font-size: 1.05rem; }
+.choice-detail { font-size: 0.9rem; color: var(--text-muted); }
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--mars-strong);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 0;
+  min-height: 44px;
+}
+
+/* ---------- Meters ---------- */
+
+.meter { margin-bottom: 14px; }
+.meter:last-child { margin-bottom: 0; }
+.meter-top { display: flex; justify-content: space-between; font-weight: 600; }
+.meter-bar {
+  height: 14px;
+  margin: 4px 0;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.meter-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+.meter-lifeSupport .meter-fill { background: var(--meter-life); }
+.meter-power .meter-fill { background: var(--meter-power); }
+.meter-shielding .meter-fill { background: var(--meter-shield); }
+
+.meter.is-low .meter-fill { background: var(--danger); }
+.meter.is-low .meter-value, .meter.is-low .meter-help { color: var(--danger); }
+
+/* ---------- Crew face (inline SVG, drawn in js/ui.js) ---------- */
+
+.crew-row { display: flex; gap: 14px; align-items: center; }
+.face { width: 76px; height: 76px; flex: none; }
+.face-head { fill: var(--surface-3); stroke: var(--text-muted); stroke-width: 3; }
+.face-eye { fill: var(--text); }
+.face-lid { fill: var(--surface-3); }
+.face-line { fill: none; stroke: var(--text); stroke-width: 3.5; stroke-linecap: round; }
+.face-line.thin { stroke-width: 2; stroke: var(--text-muted); }
+.face-yawn { fill: var(--surface-0); stroke: var(--text); stroke-width: 3; }
+.face[data-level="2"] .face-head, .face[data-level="3"] .face-head { stroke: var(--danger); }
+
+.crew-text { font-weight: 600; margin-bottom: 6px; }
+
+/* ---------- The card ---------- */
+
+.card { border-top: 4px solid var(--mars); }
+.card-solar { border-top-color: var(--danger); }
+.card-message { border-top-color: var(--ok); }
+
+.card-clock {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mars-strong);
+}
+.card-title { margin: 0 0 8px; font-size: 1.4rem; line-height: 1.25; }
+
+.card-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+}
+
+.learn {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0 4px;
+}
+.learn p:last-child { margin-bottom: 0; }
+.learn-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ok);
+}
+
+/* ---------- Log and end screen ---------- */
+
+.log, .hits { margin: 0; padding-left: 0; list-style: none; }
+.log li { padding: 6px 0; border-bottom: 1px solid var(--surface-3); font-size: 0.92rem; }
+.log li:last-child { border-bottom: none; }
+.log-tag { display: block; font-size: 0.75rem; color: var(--text-muted); }
+
+.hits { padding-left: 20px; list-style: decimal; margin-bottom: 8px; }
+
+.source-list { padding-left: 20px; }
+.source-list li { margin-bottom: 8px; }
+
+/* ---------- Footer ---------- */
+
+.footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 8px 16px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
