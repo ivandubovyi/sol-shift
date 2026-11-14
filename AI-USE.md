@@ -26,3 +26,11 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - Approved building milestone 1.
 
 <!-- Team lead: add every later decision you make yourself here (for example balance changes, event ideas, wording, what to cut), and anything you write or change by hand. Keep it factual. -->
+
+## Milestone 2 (Nov 15, 2026)
+
+- **Event deck.** An AI assistant wrote 18 new event cards (23 in all) in `data/events.js`, following the team's brief: two choices each, a cost on every choice, plain words for ages 7 to 12.
+- **Fatigue switch.** The AI assistant put the crew sleep part of the game behind one switch (`fatigueEnabled` in `data/numbers.js`), so the game also works without it.
+- **Balance.** The AI assistant tuned the game-design numbers by running `tools/playtest.js`, which plays 500 games for each robot player, and extended that test to try both choices of every new card.
+- **Fact check.** The AI assistant opened NASA's photojournal page PIA16913 and added two verified numbers (Gale Crater night and day air temperatures) to `data/numbers.js`.
+- **Docs.** The AI assistant updated `README.md` and added this section.

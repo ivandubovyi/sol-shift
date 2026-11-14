@@ -33,6 +33,58 @@ Useful web addresses:
 2. **Night.** Sometimes a night card appears (like the 3 a.m. pump fault). Then bedtime: keep Earth hours (the body clock slips 40 minutes) or shift bedtime to match the Sun (one rough night).
 3. Next sol. Survive sol 30 to win. If a meter hits 0, the mission ends and the end screen shows what used it up and the real science behind it.
 
+## The event deck
+
+23 two-choice cards, plus the real solar storm cards from NASA DONKI. Every choice costs something; `tools/playtest.js` checks that. "Fatigue" = yes means the card is about crew sleep and is left out when the fatigue switch is off.
+
+| id | phase | fatigue | choice 1 | choice 2 |
+|---|---|---|---|---|
+| `pump_fault` | night | yes | Wake the crew and fix it now | Let them sleep. Fix it at sunrise |
+| `cannot_sleep` | night | yes | Give them tomorrow morning off | They push through tomorrow |
+| `cold_night` | night |  | Turn the heaters up | Heaters low, everyone in sleeping bags |
+| `noisy_fan` | night |  | Get up and fix it | Switch the fan off until morning |
+| `homesick` | night | yes | Record a video message home | Stay up talking with the crew |
+| `battery_hot` | night | yes | Wake someone to cool it down | Shut that battery off until morning |
+| `roof_ping` | night |  | Go out and check now | Check it in the morning |
+| `power_spike` | night |  | Find the problem now | Turn off everything we can until morning |
+| `snoring` | night | yes | Move them to the storage room | Earplugs and hope for the best |
+| `dusty_panels` | day |  | Send two crew out to sweep | Leave the dust for now |
+| `greenhouse_lights` | day |  | Fix the wiring ourselves now | Ask Earth how to fix it |
+| `water_leak` | day |  | Patch it now | Shut the pipe off and ask Earth |
+| `dust_storm_coming` | day |  | Fill the batteries: greenhouse lights off today | Keep everything running |
+| `airlock_seal` | day |  | Replace the seal now | Tape it and go outside less |
+| `rover_stuck` | day |  | Walk out and dig it free | Ask Earth for a driving plan |
+| `antenna_drift` | day |  | Climb up and aim it | Use the backup radio |
+| `new_sprouts` | day |  | Give them extra light and care | Normal care only |
+| `panel_crack` | day |  | Swap in the spare panel | Keep using the cracked one |
+| `water_filter` | day |  | Swap the filter ourselves | Ask Earth which filter to use |
+| `greenhouse_mold` | day |  | Clean every leaf today | Pull out the moldy plants |
+| `shield_corner` | day |  | Go out and glue it down | Ask Earth for a stronger fix |
+| `suit_leak` | day |  | Patch the suit | Share the other suits |
+| `food_count` | day |  | Recount everything today | Ask Earth to check their list |
+
+Six cards can "Ask Earth": `greenhouse_lights`, `water_leak`, `rover_stuck`, `water_filter`, `shield_corner`, `food_count`. The answer arrives two phases later (about one sol).
+
+## The fatigue switch
+
+Crew sleep is one module that can be switched off. In `data/numbers.js`:
+
+```js
+fatigueEnabled: { value: true, ... }
+```
+
+Set it to `false` and the game still plays with three meters, the real NASA solar storms and the delayed messages from Earth:
+
+- tiredness and the body clock stop existing (tiredness stays 0)
+- the crew face panel and the start screen's sleep sentence are hidden
+- the work plan becomes a choice of focus (greenhouse day, solar panel day, shield repair day) instead of how many hours
+- bedtime becomes a plain "Night" card
+- cards tagged `fatigue: true` never appear
+- `?demo=pump` falls back to a normal start, because the pump fault is a sleep card
+- the end screen uses the `noFatigue` wording in `data/outcomes.js`
+
+In `js/engine.js` every place that depends on the switch is marked `FATIGUE MODULE`.
+
 ## How the code is organized
 
 ```
@@ -41,7 +93,7 @@ css/style.css           all the styles. Colors are variables at the top
 js/engine.js            the game rules. Knows nothing about the web page, so it can be tested in Node
 js/ui.js                draws the screen and handles button presses
 data/numbers.js         EVERY game number, with kind, status and source
-data/events.js          the event deck (5 cards) and the two solar event card templates
+data/events.js          the event deck (23 cards) and the two solar event card templates
 data/outcomes.js        end screen words for each way to lose, and for winning
 data/space-weather.js   real solar events from NASA DONKI, May 2024 (generated, do not edit)
 data/donki-raw/         the full, unedited DONKI responses the snapshot came from
@@ -87,21 +139,42 @@ Every entry in `data/numbers.js` has:
 
 All real-world numbers are verified. All game-design numbers are placeholders: they are tuned by playtesting and are not NASA facts. The in-game Sources screen lists only verified facts.
 
-Real facts used, all checked on 2026-11-14:
+Real facts used, all checked on 2026-11-14 or 2026-11-15:
 
 - Sol length 24.6597 h and Mars sunlight 43% of Earth's: [NASA NSSDC Mars Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html)
 - Earth to Mars message delay, about 4 to 24 minutes each way: [NASA, Space Communications: 7 Things You Need to Know](https://www.nasa.gov/missions/tech-demonstration/space-communications-7-things-you-need-to-know/)
+- Gale Crater air: nights about minus 70 C, days about 0 C (Curiosity, Aug 2012 to Feb 2013): [NASA photojournal PIA16913](https://science.nasa.gov/photojournal/steady-temperatures-at-mars-gale-crater)
 - Surface radiation 0.67 mSv per day (Curiosity RAD, Aug 2012 to Jun 2013): [NASA news release](https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/)
 - Sleep 5.98 h in step vs 4.91 h out of step with the Mars day (Phoenix team): [Barger et al. 2012, Sleep 35(10)](https://experts.arizona.edu/en/publications/learning-to-live-on-a-mars-day-fatigue-countermeasures-during-the/)
 - Solar flares and particle events, May 2024: [NASA DONKI](https://ccmc.gsfc.nasa.gov/tools/DONKI/), a saved snapshot, not live. Sol 1 replays 1 May 2024. The events were measured near Earth; placing them over a Mars base is a game simplification, and the game says so.
 
-## Testing
+## Balance and testing
 
 ```
 node tools/playtest.js
 ```
 
-It forces each event and tries both choices, checks that every event shows up in normal play, checks the solar events land on the right sols, checks that an answer from Earth arrives two phases later, checks demo mode, and plays 500 games each with a careful robot, a careless robot, and a careful robot that never fixes the body clock. It prints `ALL CHECKS PASSED` or the failures.
+It:
+
+- forces every event and tries both choices
+- checks that no choice is free, with fatigue on and with it off
+- checks that every "learn" line and end-screen fact points at a verified number
+- checks every event shows up in normal play, solar events land on the right sols, every "Ask Earth" answer arrives two phases later, and demo mode works
+- plays 500 seeded games for each robot player, then the same with fatigue off
+
+It prints `ALL CHECKS PASSED` or the failures.
+
+The robot players are simple rule-following bots written in `tools/playtest.js`, not people. Balance was tuned by changing game-design numbers in `data/numbers.js` and re-running the test until the results matched the targets. Results on 2026-11-15 (500 games each, seeds 1 to 500):
+
+| Robot player | Wins | Median losing sol |
+|---|---|---|
+| Careful (fatigue on) | 412/500 (82%) | 28 |
+| Careless: always overtime, never shelters, never fixes the body clock | 0/500 (0%) | 11 |
+| Careful, but never fixes the body clock | 147/500 (29%) | 27 |
+| Careful (fatigue off) | 482/500 (96%) | 30 |
+| Careless (fatigue off) | 0/500 (0%) | 10 |
+
+Targets were: careful about 80%, careless almost always loses around sol 10, careful-but-ignores-the-clock 25 to 35%. Real players will differ from robots, so these numbers are a starting point for playtesting with people.
 
 ## Rebuilding the space weather snapshot
 
