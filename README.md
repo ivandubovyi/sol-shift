@@ -38,31 +38,42 @@ The first time someone opens the game, three short "How to play" screens come be
 - Lines with real facts point at verified entries in `data/numbers.js` and show the source link. The tired-crew line has `fatigueOnly: true`, so it disappears when the fatigue switch is off.
 - To see the intro again on your own computer as a first-time visitor, clear the site data or run `localStorage.removeItem("solShift.introSeen")` in the browser console.
 
+## Full screen and glass
+
+The outpost scene fills the whole screen; the page never scrolls. Everything else floats over it as "glass": see-through panels with a blur behind them, a thin light border, a soft inner glow and a dark tint so text stays readable over the bright day sky. Browsers without blur get nearly solid panels instead (the `@supports not` rule at the end of `css/style.css`).
+
+- **Phones held upright:** sol and Menu at the top, the three meters in a glass bar under them, the crew chip below that, and the card as a bottom sheet. The camera (`updateCamera()` in `js/ui.js`) keeps the habitat between the top bar and the sheet.
+- **Wide screens and phones on their side:** meters top-left, crew chip bottom-left, the card as a panel on the right. Short screens put the meters in one row.
+- **Menu:** Mission log (a glass drawer), How to play, Sources, Sound, and Full screen. The Full screen button only appears where the browser supports it (not on iPhone Safari), and the game never needs it.
+- **Type:** labels and numbers use `--font-hud` (system monospace faces, capitals, wide spacing, numbers that line up). Event text uses the plain system face so young players can read it. Nothing is downloaded. To try a self-hosted font later, change `--font-hud` in `css/style.css`.
+- **Contrast:** the worst case is the brightest day sky during a solar flare flash. Measured over it, glass text is at least 4.5:1 (see the milestone 5 report in AI-USE.md for the numbers).
+
 ## The outpost scene
 
-The picture at the top of the game screen is drawn in code by `js/scene.js` (SVG shapes, no image files, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game.
+The scene is drawn in code by `js/scene.js` (SVG shapes, no image files, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game. The framing, palette and crew poses follow art direction from Pixel, the team's AI designer bot.
 
 | What happens in the game | What the picture shows |
 |---|---|
-| Day phase | Dusty, rust-tinted sky, Sun high, crew working outside |
-| Evening card | The Sun at the horizon with a blue glow around it (real: see `marsSunsetBlue` in `data/numbers.js`) |
-| Night card (like the 3 a.m. pump fault) | Dark sky, stars, amber alarm glow, roof beacon, crew asleep in the lit window |
-| Crew getting tired / very tired (fatigue on) | Crew outside slumps; when very tired they shut their eyes and yawn |
-| Storm shelter chosen | A shield dome over the habitat, crew inside the window |
-| Real solar flare card | One soft flash, a bright ring around the Sun, pink-tinted sky |
+| Day phase | Warm dusty sky (an artistic choice), pale Sun, three astronauts: one brushing the panels, one carrying a crate, one pointing at the dish |
+| Evening card | A small blue Sun at the horizon with a blue glow (real: see `marsSunsetBlue` in `data/numbers.js`), orange band at the horizon |
+| Night | Dark sky, stars in three sizes; the only warm light is the habitat windows, spilling onto the ground; sleeping heads with a "z Z" |
+| Night card (like the 3 a.m. pump fault) | Red alarm light on the ground, red roof beacon, one crew member at the door with a torch, two still asleep |
+| Crew getting tired / very tired (fatigue on) | Astronauts slump; when very tired a small yawn shows in the visor |
+| Storm shelter chosen | A shield dome over the habitat, crew inside |
+| Real solar flare card | One soft 600 ms flash (never repeated), a bright ring around the Sun, pink-tinted sky |
 | Real particle storm card | Same, plus fast streaks across the sky |
-| "Leave the dust", dust cloud cards | Dust pattern on the solar panels, dusty haze |
-| Greenhouse lights off (several cards) | Dark greenhouse, dull plants |
-| A question to Earth is waiting | The dish sends signal waves until the answer arrives |
-| Fatigue switched off | No sleeping, slumping or yawning: the crew is just "inside" at night |
+| Dust cards | Dust on the panels; dust storms cover the far ridge first, then a light haze |
+| Greenhouse lights off | Dark greenhouse, dull plants (at night the greenhouse glows green) |
+| A question to Earth is waiting | The dish sends signal waves until the answer arrives; its small red light blinks every 3 s |
+| Fatigue switched off | No sleeping, slumping or yawning, and no crew chip |
 
 Choice-driven picture changes are listed per choice in `data/events.js` as `scene: { panelsDusty: 1 }` and so on. They only change the drawing.
 
-Motion: the sky fades between day, sunset and night; the crew bobs while working; new cards slide in; gauges slide and show "+5" or "-12"; each new sol shows a "Sol 4" title with its May 2024 space weather date. Anyone whose computer asks for reduced motion gets no movement and no flash (the flare never strobes for anyone: one soft flash at most). The picture has a short text alternative, and everything it shows is also in the text.
+Motion: the sky fades between day, sunset and night; stars twinkle slowly; dust drifts on the title screen; new cards slide in; meters slide and show "+5" or "-12"; each new sol shows a "Sol 4" title with its May 2024 space weather date. Anyone whose computer asks for reduced motion gets no movement and no flash. The picture has a short text alternative, and everything it shows is also in the text.
 
-Sound: off by default. The Sound button in the top bar turns on short tones made in code (choice click, night alarm, message from Earth, solar event, win, lose). No sound files.
+Sound: off by default. Menu, then Sound, turns on short tones made in code. No sound files.
 
-Gauges: each meter has a drawn icon, a sliding bar and a number. When a meter is low it turns red, gets stripes and a "Low" tag, so the warning never depends on color alone.
+Meters: each has a drawn icon, a sliding bar and a number. When a meter is low it gets a "Low" tag, a striped bar and a lighter red number, so the warning never depends on color alone.
 
 The end screen is a mission report: a stamp, the sol reached, a chart of the three meters over the mission, what used the meter up, and the real science with its source.
 

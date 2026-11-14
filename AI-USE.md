@@ -47,3 +47,10 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **Fact check.** The AI assistant opened a NASA JPL news page and a NASA Science page about Curiosity's blue sunset, and added a verified `marsSunsetBlue` entry to `data/numbers.js`, used on the evening card.
 - **Game rules unchanged.** No balance numbers were changed. The evening card's clock label and its new fact line are wording changes only.
 - **Tests and docs.** The AI assistant added checks to `tools/playtest.js` and a scene section to `README.md`.
+
+## Milestone 5 (Nov 15, 2026)
+
+- **Who decided what.** The full-screen layout and the "glass, futuristic" look for the meters and panels were the team lead's direction. The scene composition, palette, crew poses and polish came from Pixel, the team's AI designer bot. An AI assistant (Claude) wrote all of the code.
+- **Code.** The AI assistant rewrote `js/scene.js` (closer camera, three land bands, a larger habitat, bigger astronauts with poses, night lighting, a night watch with a torch), `css/style.css` (full-screen layout, glass panels, system-font HUD type) and `index.html`, and updated `js/ui.js` (camera framing, menu, mission log drawer, full screen button). It shortened the text of the 3 a.m. pump fault card so it fits on a phone.
+- **No downloads, no generated images.** No fonts, images or sounds are downloaded or generated. Everything is drawn in code with system fonts.
+- **Game rules unchanged.** No balance numbers were changed; `tools/playtest.js` gives the same results as before.

@@ -11,6 +11,12 @@
     4. calls SolShiftEngine.choose() when a choice button is pressed
     5. shows the end screen (the mission report) and the sources screen
 
+  Layout: the scene fills the whole screen and every panel floats over it
+  as glass (see css/style.css). updateCamera() below points the scene's
+  camera so the habitat and crew stay in the part of the screen that is
+  not covered by panels: above the bottom sheet on phones, left of the
+  side panel on wide screens.
+
   Useful web addresses (for testing and for the demo video):
     index.html?demo=pump    start right at the 3 a.m. pump fault
     index.html?seed=123     the same seed always plays the same game
@@ -32,8 +38,8 @@
 
   var game = null;           // the current game, or null before Start
   var screenBeforeSources = "start-screen";
-  var scene = null;          // the outpost picture in the game screen (js/scene.js)
-  var titleScene = null;     // the picture on the title screen
+  var scene = SolShiftScene.create(document.getElementById("scene")); // the full-screen picture (js/scene.js)
+  var currentScreen = "start-screen";
   var sceneMemory = {};      // picture changes left by a choice: { panelsDusty: lastSol, ... }
   var nightEventPhase = -1;  // the phase number in which a night card was shown (keeps the sky dark)
   var lastTitleSol = null;   // the sol whose title card was shown last
@@ -59,16 +65,81 @@
 
   function showScreen(id) {
     SCREENS.forEach(function (s) { $(s).hidden = (s !== id); });
-    $("topbar-status").hidden = (id !== "game-screen");
+    currentScreen = id;
+    closeMenu();
+    closeLog();
     if (id !== "game-screen") { document.body.classList.remove("is-night"); }
-    // The title picture picks its camera from its size, so set it once it is visible.
-    if (id === "start-screen" && titleScene) { titleScene.setTitleMode(true); }
-    window.scrollTo(0, 0);
+    document.body.setAttribute("data-screen", id);
+    // Before a game starts, the picture is the base at night (the title look).
+    if (id === "start-screen" || (!game && id !== "game-screen")) { showTitleScene(); }
+    scene.setTitleMode(id === "start-screen");
+    updateCamera();
   }
+
+  // The title look: the base at night, windows glowing, crew asleep.
+  function showTitleScene() {
+    scene.drawSky("night");
+    scene.setCrewState("sleep");
+    scene.setAlarm(false);
+    scene.setSpaceWeather(null, null);
+    scene.setShield(false);
+    scene.setDust(false);
+    scene.setPanelsDusty(false);
+    scene.setGreenhouseLights(true);
+    scene.setDishBlinking(false);
+    scene.describe("A small Mars base at night, its windows glowing.");
+  }
+
+  // ---------------------------------------------------------------------
+  // The camera: which part of the drawing fills the screen.
+  // The drawing's main spot is the habitat (about x 395, y 268 in scene
+  // units). We choose how many scene units fit across the screen, and
+  // where on the screen the habitat should appear.
+  // ---------------------------------------------------------------------
+
+  // Wide screens (and phones turned sideways) put the card on the right.
+  var SIDE_LAYOUT = "(min-width: 760px) and (orientation: landscape)";
+
+  function updateCamera() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    var side = window.matchMedia(SIDE_LAYOUT).matches;
+    var units, fx, fy;   // units across the screen; where the habitat sits (0 to 1)
+
+    if (currentScreen === "game-screen") {
+      if (side) {
+        var panel = $("card").offsetWidth + 24;          // the side card and its margin
+        var openWidth = Math.max(w - panel, w * 0.45);   // the part of the screen left for the picture
+        units = 440 * w / openWidth;
+        fx = (openWidth / 2) / w;
+        fy = h < 520 ? 0.66 : 0.6;   // short screens: the habitat a bit lower, under the meters
+      } else {
+        // Phones: the habitat sits between the top HUD and the bottom sheet.
+        units = 405;
+        var top = $("crew-panel").hidden ? $("meters").getBoundingClientRect().bottom : $("crew-panel").getBoundingClientRect().bottom;
+        var sheetTop = $("card").getBoundingClientRect().top;
+        var middle = top + (sheetTop - top) * 0.58;
+        fx = 0.5;
+        fy = Math.min(0.6, Math.max(0.2, middle / h));
+      }
+    } else {
+      // Title and other screens: the habitat in the middle, between the
+      // title at the top and the buttons at the bottom.
+      units = side ? 640 : 400;
+      fx = 0.5;
+      fy = 0.5;
+    }
+
+    var scale = w / units;      // screen pixels per scene unit
+    var viewW = units;
+    var viewH = h / scale;
+    scene.setCamera(395 - fx * viewW, 268 - fy * viewH, viewW, viewH);
+  }
+
+  window.addEventListener("resize", updateCamera);
 
   function startGame(options) {
     game = E.newGame(DATA, options);
-    if (!scene) { scene = SolShiftScene.create($("scene")); }
     sceneMemory = {};
     nightEventPhase = -1;
     lastTitleSol = null;
@@ -92,11 +163,13 @@
     renderCard();
     renderLog();
     showSolTitle();
+    updateCamera();   // the card height may have changed
   }
 
   function renderTopbar() {
     var total = DATA.numbers.missionLengthSols.value;
-    $("sol-chip").textContent = "Sol " + game.sol + " of " + total;
+    $("sol-chip").textContent = game.sol + "/" + total;
+    $("sol-box").setAttribute("aria-label", "Sol " + game.sol + " of " + total + ", " + (game.phase === "day" ? "day" : "night"));
     $("phase-chip").textContent = game.phase === "day" ? "Day" : "Night";
     document.body.classList.toggle("is-night", game.phase === "night");
   }
@@ -343,7 +416,7 @@
     $("card-clock").textContent = clock;
     $("card-title").textContent = prompt.title;
     $("card-text").textContent = prompt.text;
-    $("card").className = "panel card card-" + prompt.kind;
+    $("card").className = "glass card card-" + prompt.kind;
 
     // A new card slides in, and some cards make a sound (if sound is on).
     var key = game.sol + "/" + game.phaseCount + "/" + prompt.title;
@@ -399,9 +472,9 @@
         SolShiftSound.play("choice");
         E.choose(game, index);
         render();
-        // Keep the new card in view, and put keyboard focus on its first button.
+        // Start the new card at its top, and put keyboard focus on its first button.
         if (!game.outcome) {
-          $("card").scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+          $("card").scrollTop = 0;
           var first = document.querySelector("#choices button");
           if (first) { first.focus({ preventScroll: true }); }
         }
@@ -538,6 +611,12 @@
       ? "All " + total + " sols survived"
       : "Mission ended on sol " + game.sol + " of " + total;
     drawReportChart();
+    // The picture behind the report: the mission is over, so the sky calms down.
+    scene.setSpaceWeather(null, null);
+    scene.setAlarm(false);
+    scene.drawSky("dusk");
+    scene.setCrewState(game.outcome === "won" ? "sleep" : "away");
+    scene.describe(game.outcome === "won" ? "The Mars base at sunset, the crew safe inside." : "The Mars base at sunset, empty.");
     SolShiftSound.play(game.outcome === "won" ? "win" : "lose");
     $("end-title").textContent = words.title;
     $("end-text").textContent = words.text;
@@ -636,15 +715,72 @@
     if (on) { SolShiftSound.play("choice"); }
   });
 
-  // The title screen picture: the base at sunset, crew asleep inside.
-  titleScene = SolShiftScene.create($("title-scene"));
-  titleScene.drawSky("night");
-  titleScene.setCrewState("inside");
-  titleScene.setTitleMode(true);
-  titleScene.describe("A small Mars base at night, its windows glowing.");
-  window.addEventListener("resize", function () {
-    if (!$("start-screen").hidden) { titleScene.setTitleMode(true); }
+  // ---------------------------------------------------------------------
+  // Menu, mission log drawer and full screen
+  // ---------------------------------------------------------------------
+
+  function closeMenu() {
+    $("menu").hidden = true;
+    $("menu-button").setAttribute("aria-expanded", "false");
+  }
+
+  function closeLog() {
+    $("log-drawer").hidden = true;
+    $("log-button").setAttribute("aria-expanded", "false");
+  }
+
+  $("menu-button").addEventListener("click", function () {
+    var open = $("menu").hidden;
+    $("menu").hidden = !open;
+    this.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { $("menu").querySelector("button").focus(); }
   });
+
+  $("log-button").addEventListener("click", function () {
+    closeMenu();
+    $("log-drawer").hidden = false;
+    this.setAttribute("aria-expanded", "true");
+    $("log-close").focus();
+  });
+
+  $("log-close").addEventListener("click", function () {
+    closeLog();
+    $("menu-button").focus();
+  });
+
+  // Escape closes the menu and the log (the intro handles its own Escape).
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") { return; }
+    if (!$("menu").hidden) { closeMenu(); $("menu-button").focus(); }
+    if (!$("log-drawer").hidden) { closeLog(); $("menu-button").focus(); }
+  });
+
+  // Clicking outside the menu closes it.
+  document.addEventListener("click", function (event) {
+    if (!$("menu").hidden && !$("menu").contains(event.target) && event.target !== $("menu-button")) { closeMenu(); }
+  });
+
+  // Full screen button: only shown where the browser supports it (not on
+  // iPhone Safari). The game never needs it.
+  var fullscreenButtons = document.querySelectorAll("[data-fullscreen]");
+  function updateFullscreenLabels() {
+    var on = !!document.fullscreenElement;
+    fullscreenButtons.forEach(function (b) { b.textContent = on ? "Exit full screen" : "Full screen"; });
+  }
+  if (document.fullscreenEnabled) {
+    fullscreenButtons.forEach(function (btn) {
+      btn.hidden = false;
+      btn.addEventListener("click", function () {
+        if (document.fullscreenElement) { document.exitFullscreen(); }
+        else { document.documentElement.requestFullscreen().catch(function () { /* the browser said no: the game still works */ }); }
+      });
+    });
+    document.addEventListener("fullscreenchange", function () { updateFullscreenLabels(); updateCamera(); });
+  }
+
+  // The picture starts with the title look.
+  showTitleScene();
+  updateCamera();
 
   // What to show first:
   //   ?demo=pump      straight into the pump fault (no intro, for the demo video)

@@ -22,6 +22,7 @@
     scene.setCrewState(state)     "work", "tired", "exhausted", "shelter",
                                   "sleep", "inside", "away"
     scene.setTitleMode(on)        the title screen look (slow drifting dust)
+    scene.setCamera(x, y, w, h)   which part of the drawing fills the screen
     scene.describe(text)          the short text alternative for screen readers
 
   The colors and motion live in css/style.css under "Outpost scene".
@@ -42,9 +43,12 @@ var SolShiftScene = (function () {
 
   // The far ridge outline (a tall mound in the middle, like the mountain
   // in Gale Crater) and everything below it.
-  var RIDGE_FAR = "M60 252 L170 240 L260 237 L330 228 L400 215 L450 206 L482 203 L520 211 L580 229 L640 236 L740 242 L740 380 L60 380 Z";
-  var DUNES_MID = "M60 268 Q190 252 300 263 T500 258 T740 256 L740 380 L60 380 Z";
-  var GROUND_FG = "M60 287 Q260 278 400 285 T740 282 L740 380 L60 380 Z";
+  // The shapes reach far past the edges, so any screen shape is covered.
+  var RIDGE_FAR = "M-1500 252 L60 252 L170 240 L260 237 L330 228 L400 215 L450 206 L482 203 L520 211 L580 229 L640 236 L740 242 L2500 242 L2500 2500 L-1500 2500 Z";
+  var DUNES_MID = "M-1500 268 L60 268 Q190 252 300 263 T500 258 T740 256 L2500 256 L2500 2500 L-1500 2500 Z";
+  var GROUND_FG = "M-1500 287 L60 287 Q260 278 400 285 T740 282 L2500 282 L2500 2500 L-1500 2500 Z";
+  // A rectangle bigger than any camera view, for skies and overlays.
+  var BIG = { x: -1500, y: -2000, width: 4000, height: 4500 };
 
   // Make an SVG element with attributes, and add it to a parent.
   function add(parent, tag, attrs) {
@@ -61,9 +65,15 @@ var SolShiftScene = (function () {
     return add(parent, "g", attrs);
   }
 
-  // A vertical color gradient (top to bottom).
-  function linear(defs, id, stops) {
-    var g = add(defs, "linearGradient", { id: id, x1: 0, y1: 0, x2: 0, y2: 1 });
+  // A vertical color gradient. With top and bottom given, it is measured
+  // in scene units (so a huge sky rectangle still fades between those
+  // heights); without them it stretches over the shape it fills.
+  function linear(defs, id, stops, top, bottom) {
+    var attrs = { id: id, x1: 0, y1: 0, x2: 0, y2: 1 };
+    if (top !== undefined) {
+      attrs = { id: id, x1: 0, y1: top, x2: 0, y2: bottom, gradientUnits: "userSpaceOnUse" };
+    }
+    var g = add(defs, "linearGradient", attrs);
     stops.forEach(function (s) { add(g, "stop", { offset: s[0], "stop-color": s[1], "stop-opacity": s[2] === undefined ? 1 : s[2] }); });
   }
 
@@ -97,9 +107,9 @@ var SolShiftScene = (function () {
 
     var defs = add(svg, "defs");
     // Skies. Day and night colors are artistic choices, not measurements.
-    linear(defs, P + "sky-day", [["0", "#E8A87C"], ["1", "#F3C9A1"]]);
-    linear(defs, P + "sky-dusk", [["0", "#2C2A4A"], ["0.75", "#8A4F5E"], ["1", "#8A4F5E"]]);
-    linear(defs, P + "sky-night", [["0", "#0B0E1A"], ["1", "#1A1630"]]);
+    linear(defs, P + "sky-day", [["0", "#E8A87C"], ["1", "#F3C9A1"]], 60, 250);
+    linear(defs, P + "sky-dusk", [["0", "#2C2A4A"], ["1", "#8A4F5E"]], 60, 240);
+    linear(defs, P + "sky-night", [["0", "#0B0E1A"], ["1", "#1A1630"]], 60, 250);
     linear(defs, P + "dusk-band", [["0", "#E58A5A", 0], ["0.55", "#E58A5A", 0.75], ["1", "#E58A5A", 0]]);
     radial(defs, P + "blue-glow", "#9ccaf5", 0.9);   // the real blue glow around a Mars sunset
     radial(defs, P + "window-light", "#FFC46B", 0.7);
@@ -110,29 +120,27 @@ var SolShiftScene = (function () {
     add(hatch, "line", { x1: 0, y1: 0, x2: 0, y2: 5, stroke: "#7c4a2a", "stroke-width": 2.5 });
 
     // --- Sky: three layers; CSS fades between them ---
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-night)" });
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-day)", "class": "sky-layer sky-day" });
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, fill: "url(#" + P + "sky-dusk)", "class": "sky-layer sky-dusk" });
-    add(svg, "rect", { x: 0, y: 205, width: 800, height: 45, fill: "url(#" + P + "dusk-band)", "class": "dusk-band" });
+    add(svg, "rect", Object.assign({}, BIG, { fill: "url(#" + P + "sky-night)" }));
+    add(svg, "rect", Object.assign({}, BIG, { fill: "url(#" + P + "sky-day)", "class": "sky-layer sky-day" }));
+    add(svg, "rect", Object.assign({}, BIG, { fill: "url(#" + P + "sky-dusk)", "class": "sky-layer sky-dusk" }));
+    add(svg, "rect", { x: -1500, y: 205, width: 4000, height: 45, fill: "url(#" + P + "dusk-band)", "class": "dusk-band" });
 
-    // Stars in three sizes. Fixed spots, so the sky is the same every visit.
+    // Stars in three sizes, spread over the whole sky. The positions come
+    // from a fixed recipe, so the sky is the same every visit.
     var stars = group(svg, "stars");
-    var spots = [
-      [140, 152, 2], [172, 185, 0], [205, 160, 1], [238, 204, 0], [262, 148, 0], [290, 178, 2],
-      [318, 158, 0], [344, 196, 1], [372, 150, 0], [398, 176, 0], [430, 158, 2], [458, 190, 0],
-      [486, 150, 1], [512, 172, 0], [540, 160, 0], [566, 188, 2], [596, 152, 0], [622, 178, 1],
-      [650, 158, 0], [668, 196, 0], [188, 222, 0], [420, 200, 0], [610, 214, 1], [300, 218, 0],
-      // higher stars, only seen in the taller title screen picture
-      [270, 60, 2], [300, 92, 0], [325, 52, 1], [350, 118, 0], [372, 74, 0], [398, 46, 2], [420, 98, 0],
-      [446, 64, 1], [470, 120, 0], [492, 82, 0], [512, 48, 0], [338, 86, 0], [458, 132, 1], [284, 128, 0]
-    ];
     var sizes = [0.7, 1.1, 1.7];
-    spots.forEach(function (s, i) {
-      add(stars, "circle", { cx: s[0], cy: s[1], r: sizes[s[2]], "class": "star" + (s[2] === 2 || i % 5 === 0 ? " twinkle t" + (i % 3) : "") });
-    });
+    var seed = 7;
+    function nextStar() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    for (var i = 0; i < 260; i++) {
+      var sx = -500 + nextStar() * 1800;
+      var sy = -600 + nextStar() * 830;   // from high up down to y 230
+      var size = nextStar() < 0.12 ? 2 : (nextStar() < 0.35 ? 1 : 0);
+      add(stars, "circle", { cx: sx.toFixed(1), cy: sy.toFixed(1), r: sizes[size],
+        "class": "star" + (size === 2 || i % 7 === 0 ? " twinkle t" + (i % 3) : "") });
+    }
 
     // The Sun. High and pale by day; at dusk it sits low with its blue glow.
-    add(svg, "circle", { cx: 560, cy: 230, r: 62, fill: "url(#" + P + "blue-glow)", "class": "sun-glow" });
+    add(svg, "circle", { cx: 530, cy: 208, r: 62, fill: "url(#" + P + "blue-glow)", "class": "sun-glow" });
     add(svg, "circle", { cx: 590, cy: 168, r: 22, "class": "sun-corona" });
     add(svg, "circle", { cx: 590, cy: 168, r: 8, "class": "sun" });
     var streaks = group(svg, "particle-streaks");
@@ -231,14 +239,13 @@ var SolShiftScene = (function () {
     makeAstronaut(watch, 302, 297, "torch", "stripe-life", true);
 
     // --- Weather overlays (on top) ---
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "dust-haze" });
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "storm-haze" });
-    add(svg, "rect", { x: 0, y: 0, width: 800, height: 400, "class": "flare-flash" });
+    add(svg, "rect", Object.assign({}, BIG, { "class": "dust-haze" }));
+    add(svg, "rect", Object.assign({}, BIG, { "class": "storm-haze" }));
+    add(svg, "rect", Object.assign({}, BIG, { "class": "flare-flash" }));
 
-    // Foreground rocks overlapping the bottom edge, to frame the shot.
-    add(svg, "ellipse", { cx: 150, cy: 360, rx: 40, ry: 17, "class": "rock-fg" });
-    add(svg, "ellipse", { cx: 196, cy: 356, rx: 15, ry: 7, "class": "rock-fg" });
-    add(svg, "ellipse", { cx: 650, cy: 362, rx: 46, ry: 19, "class": "rock-fg" });
+    // A few dark rocks in the foreground, in front of the base.
+    add(svg, "path", { d: "M214 318 q6 -8 16 -7 q9 1 12 7 Z", "class": "rock-fg" });
+    add(svg, "path", { d: "M584 316 q5 -7 13 -6 q8 1 10 6 Z", "class": "rock-fg" });
 
     // The short text alternative for screen readers.
     svg.setAttribute("role", "img");
@@ -266,15 +273,13 @@ var SolShiftScene = (function () {
     function setGreenhouseLights(on) { flag("greenhouse-dark", !on); }
     function setShield(on) { flag("shield-up", on); }
     function setDishBlinking(on) { flag("dish-blinking", on); }
-    // The title screen picture is often tall (a phone held upright), so it
-    // uses a taller, narrower camera that keeps the glowing habitat in view.
-    function setTitleMode(on) {
-      flag("title-mode", on);
-      if (!on) { svg.setAttribute("viewBox", "120 140 560 220"); return; }
-      var w = svg.clientWidth || 1;
-      var h = svg.clientHeight || 1;
-      svg.setAttribute("viewBox", w / h < 1 ? "250 40 270 320" : "120 60 560 300");
-      svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
+    function setTitleMode(on) { flag("title-mode", on); }
+
+    // Point the camera: show the part of the drawing from (x, y), w wide
+    // and h tall. js/ui.js works out these numbers from the screen size.
+    function setCamera(x, y, w, h) {
+      svg.setAttribute("viewBox", [x, y, w, h].map(function (n) { return n.toFixed(1); }).join(" "));
+      svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
     }
 
     // kind: null, "flare" or "storm". The soft flash plays once when a new
@@ -320,6 +325,7 @@ var SolShiftScene = (function () {
       setDishBlinking: setDishBlinking,
       setCrewState: setCrewState,
       setTitleMode: setTitleMode,
+      setCamera: setCamera,
       describe: describe
     };
   }

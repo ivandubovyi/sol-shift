@@ -1,41 +1,54 @@
 /*
   Sol Shift: styles.
-  NOTE: this file was written by an AI assistant (Claude). The art direction
-  (framing, palette, layout on phones) came from Pixel, the team's AI
-  designer bot. See AI-USE.md.
+  NOTE: this file was written by an AI assistant (Claude). The full-screen
+  layout and the glass look are the team lead's direction; the scene composition and
+  palette came from Pixel, the team's AI designer bot. See AI-USE.md.
 
-  Design idea: restraint, plus one warm light in the dark. The outpost
-  picture is the star; everything around it is a quiet, near-black panel.
-  The accent color for buttons is the blue of a real Mars sunset (see
-  marsSunsetBlue in data/numbers.js).
+  Layout: the outpost scene fills the whole screen (.world). Every panel
+  floats over it as "glass": see-through, blurred behind, a thin light
+  border, a soft inner glow, and a dark tint so text stays readable even
+  over the bright day sky. The page itself never scrolls; long panels
+  scroll inside themselves.
 
-  Colors are "tokens" (CSS variables) defined once at the top.
-  Phones first: one column, the picture and meters in one compact block,
-  then the card. Wide screens: picture on the left, card on the right.
+  Phones held upright: meters across the top, the card as a bottom sheet.
+  Wide screens and phones turned sideways: meters top-left, card on the right.
+
+  Fonts: system fonts only, nothing is downloaded, so the game works offline.
+  Labels and numbers use --font-hud (a monospace look); event text uses a
+  plain readable face for young players. To try a self-hosted font later,
+  change --font-hud in one place.
+
   Anyone who asks their computer for reduced motion gets no movement and
   no flashes.
 */
 
 :root {
-  /* Surfaces, from the page background up to raised panels */
+  /* Base surfaces (used behind glass when blur is not supported) */
   --space: #0e0b0b;
-  --surface-1: #181313;
   --surface-2: #221b19;
   --surface-3: #33292a;
   --border: #423533;
 
+  /* Glass */
+  --glass-tint: rgba(14, 12, 20, 0.72);     /* dark tint: keeps text readable over the day sky */
+  --glass-solid: rgba(18, 15, 22, 0.95);    /* used where blur is not supported */
+  --glass-line: rgba(255, 255, 255, 0.2);   /* the thin light border */
+  --glass-glow: rgba(143, 193, 239, 0.10);  /* the soft inner glow */
+
   /* Text */
   --text: #f4ece4;
-  --text-muted: #c4b4a6;
+  --text-muted: #cbbcae;
+  --hud-muted: #b9c6d6;
 
   /* Accents */
   --rust: #c97a55;
-  --sunset: #8fc1ef;        /* buttons, focus, highlights */
+  --sunset: #8fc1ef;        /* buttons, focus, highlights: the blue of a Mars sunset */
   --sunset-strong: #bfe0ff;
   --sunset-ink: #0d1a28;    /* dark text on the blue */
   --alarm: #ffb547;
   --alarm-red: #ff6b4a;
   --danger: #ff6b6b;
+  --danger-text: #ffa8a8;   /* red text that still reads on dark glass */
   --ok: #8bd49a;
 
   /* Meter colors */
@@ -43,14 +56,16 @@
   --meter-power: #f2c14e;
   --meter-shield: #a395f5;
 
-  /* Type: system faces only (nothing to download, works offline).
-     Headings use a rounded heavy face where the computer has one. */
+  /* Type (all already on the computer) */
+  --font-hud: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
   --font-heavy: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  --radius: 14px;
-  --tap: 56px;              /* minimum height for anything you tap */
+  --tap: 56px;              /* minimum height for main tap targets */
+  --side-card: min(420px, 42vw);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * { box-sizing: border-box; }
@@ -64,10 +79,18 @@
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+/* The page never scrolls: it is exactly one screen. */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 html { -webkit-text-size-adjust: 100%; }
 
 body {
-  margin: 0;
+  height: 100vh;
+  height: 100dvh;
   background: var(--space);
   color: var(--text);
   font-family: var(--font-body);
@@ -77,12 +100,8 @@ body {
 
 a { color: var(--sunset); }
 
-h1, h2, .card-title, .sol-title-num, .stamp {
-  font-family: var(--font-display);
-  letter-spacing: -0.01em;
-}
-
-h1 { font-size: 1.75rem; line-height: 1.15; margin: 0 0 12px; font-weight: 800; }
+h1, h2, .card-title, .sol-title-num, .stamp { font-family: var(--font-display); letter-spacing: -0.01em; }
+h1 { font-size: 1.6rem; line-height: 1.15; margin: 0 0 12px; font-weight: 800; }
 p { margin: 0 0 12px; }
 
 .small { font-size: 0.85rem; }
@@ -90,85 +109,58 @@ p { margin: 0 0 12px; }
 
 :focus-visible { outline: 3px solid var(--sunset); outline-offset: 2px; }
 
-/* ---------- Top bar ---------- */
+/* HUD type: labels in capitals with wide spacing, numbers that line up. */
+.hud-label {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.hud-number { font-family: var(--font-hud); font-weight: 800; font-variant-numeric: tabular-nums; }
 
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+/* ---------- Glass ---------- */
+
+.glass {
+  background: var(--glass-tint);
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 28px var(--glass-glow),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
+  color: var(--text);
+}
+
+/* Browsers without blur get a nearly solid panel instead: see the very end of this file. */
+
+/* ---------- The world (the full-screen scene) and the screens over it ---------- */
+
+.world { position: fixed; inset: 0; z-index: 0; background: #0B0E1A; }
+.scene { display: block; width: 100%; height: 100%; }
+
+main { position: fixed; inset: 0; z-index: 1; }
+.screen { position: absolute; inset: 0; }
+
+/* Panels that hold a lot of text (how to play, sources, mission report). */
+.overlay-screen {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(14, 11, 11, 0.94);
-  border-bottom: 1px solid var(--border);
+  justify-content: center;
+  padding: calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));
 }
-
-.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--text); }
-
-.topbar-right, .topbar-status { display: flex; gap: 6px; align-items: center; }
-
-.chip {
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--surface-3);
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 700;
-  white-space: nowrap;
+.sheet-panel {
+  width: 100%;
+  max-width: 620px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 20px;
 }
-
-.chip-button {
-  border: 1px solid var(--border);
-  min-height: 36px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.chip-button[aria-pressed="true"] { background: var(--sunset); color: var(--sunset-ink); border-color: var(--sunset); }
-
-/* ---------- Layout ---------- */
-
-main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
-
-.screen { display: grid; gap: 12px; }
-
-/* Game screen. Phones: the picture (with meters inside), then the card,
-   then the log. Wide screens: picture left, card right. */
-#game-screen {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "stage" "card" "log";
-}
-#stage { grid-area: stage; }
-#card { grid-area: card; }
-.log-panel { grid-area: log; }
-
-@media (min-width: 900px) {
-  #game-screen {
-    grid-template-columns: minmax(0, 1.6fr) minmax(330px, 1fr);
-    grid-template-areas: "stage card" "log card";
-    grid-template-rows: auto 1fr;
-    align-items: start;
-  }
-  #card { position: sticky; top: 60px; }
-}
-
-.panel {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-}
-
-.panel-title {
-  margin: 0 0 8px;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.intro, .end, .sources { max-width: 640px; margin: 0 auto; width: 100%; }
 
 /* ---------- Buttons ---------- */
 
@@ -178,31 +170,30 @@ main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
   min-height: var(--tap);
   padding: 12px 16px;
   margin-top: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  border-radius: 14px;
+  border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
-
-.btn:hover { background: var(--surface-3); }
+.btn:hover { background: rgba(255, 255, 255, 0.12); }
 /* A satisfying press: the button sinks a little. */
 .btn:active { transform: scale(0.98) translateY(1px); }
 
 .btn-primary {
   background: var(--sunset);
-  border-color: var(--sunset);
+  border-color: var(--sunset-strong);
   color: var(--sunset-ink);
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.05rem;
   text-align: center;
+  box-shadow: 0 0 24px rgba(143, 193, 239, 0.35);
 }
-.btn-primary:hover { background: var(--sunset-strong); border-color: var(--sunset-strong); }
-
+.btn-primary:hover { background: var(--sunset-strong); }
 .btn-quiet { background: transparent; text-align: center; }
 
 .btn-choice {
@@ -213,165 +204,358 @@ main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
   padding: 10px 14px;
   border-left: 4px solid var(--sunset);
 }
-.btn-choice:hover { border-color: var(--sunset-strong); }
+.btn-choice:hover { border-left-color: var(--sunset-strong); }
 .choice-label { font-family: var(--font-display); font-weight: 800; font-size: 1.02rem; line-height: 1.25; }
-.choice-detail { font-size: 0.86rem; line-height: 1.35; color: var(--text-muted); }
+.choice-detail { font-size: 0.86rem; line-height: 1.35; color: #dccfc3; }   /* a little lighter than muted text: it sits on a lighter button */
 
-.link-button {
-  background: none;
-  border: none;
-  color: var(--sunset);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 8px 4px;
+.glass-link, .glass-button {
   min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-family: var(--font-hud);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
+.glass-link:hover, .glass-button:hover { background: rgba(255, 255, 255, 0.14); }
+/* Floating buttons that are glass themselves keep the dark tint. */
+.glass.glass-link, .glass.glass-button { background: var(--glass-tint); }
+.glass.glass-link:hover, .glass.glass-button:hover { background: rgba(40, 36, 52, 0.85); }
+.glass-link[aria-pressed="true"] { background: var(--sunset); color: var(--sunset-ink); }
 
-/* ---------- The stage: picture + crew mood + meters ---------- */
+/* ---------- Title screen ---------- */
 
-.stage {
-  position: relative;
-  height: 196px;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: #0B0E1A;
-}
-@media (min-width: 900px) { .stage { height: auto; aspect-ratio: 16 / 9; } }
-
-.scene { display: block; width: 100%; height: 100%; }
-
-/* Crew mood: a face and one short line in the top-left corner. */
-.mood {
-  position: absolute;
-  top: 8px;
-  left: 8px;
+.title-screen {
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  max-width: calc(100% - 16px);
-  padding: 3px 10px 3px 3px;
-  border-radius: 999px;
-  background: rgba(10, 8, 12, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: calc(9vh + var(--safe-top)) 16px calc(4vh + var(--safe-bottom));
+  text-align: center;
 }
-.mood .face { width: 26px; height: 26px; flex: none; }
-.mood p { margin: 0; }
-.crew-text { font-size: 0.78rem; font-weight: 700; line-height: 1.2; color: var(--text); }
-.clock-text { display: none; font-size: 0.74rem; color: var(--text-muted); line-height: 1.2; }
-.mood[data-level="2"], .mood[data-level="3"] { border-color: var(--danger); }
-@media (min-width: 900px) {
-  .mood { top: 12px; left: 12px; padding: 5px 14px 5px 5px; border-radius: 14px; }
-  .mood .face { width: 38px; height: 38px; }
-  .crew-text { font-size: 0.92rem; }
-  .clock-text { display: block; }
+.title-head { display: flex; flex-direction: column; align-items: center; }
+.game-title {
+  margin: 0;
+  font-family: var(--font-heavy);
+  font-weight: 900;
+  font-size: clamp(3rem, 15vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff6ea;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+}
+.title-sub {
+  margin: 12px 0 0;
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e7eef8;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+.title-actions { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; }
+.btn-big { min-height: 60px; font-size: 1.2rem; }
+.title-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.title-note {
+  margin: 12px 0 0;
+  max-width: 340px;
+  font-size: 0.75rem;
+  color: #d9d2cb;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
 }
 
-/* The three meters as pills over a dark scrim at the bottom of the picture. */
-.pills {
+/* ---------- Game screen: phones held upright (the default) ---------- */
+
+.hud-top {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: calc(8px + var(--safe-top));
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.chip-glass {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+.chip-glass .hud-number { font-size: 1rem; }
+
+/* The three meters */
+.meters {
+  position: absolute;
+  top: calc(62px + var(--safe-top));
+  left: 8px;
+  right: 8px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  padding: 18px 8px 8px;
-  background: linear-gradient(to top, rgba(8, 6, 10, 0.92) 0%, rgba(8, 6, 10, 0.75) 60%, rgba(8, 6, 10, 0) 100%);
+  padding: 8px 4px;
+  border-radius: 14px;
 }
-
-.pill {
-  position: relative;
-  padding: 4px 8px 5px;
-  border-radius: 10px;
-  background: rgba(10, 8, 12, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  min-width: 0;
-}
-.gauge-top { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.gauge-icon { width: 13px; height: 13px; flex: none; transform-origin: center; }
+.gauge { position: relative; padding: 0 6px; min-width: 0; }
+.gauge + .gauge { border-left: 1px solid rgba(255, 255, 255, 0.14); }
+.gauge-top { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.gauge-icon { width: 14px; height: 14px; flex: none; transform-origin: center; }
 .gauge-lifeSupport .gauge-icon { fill: var(--meter-life); }
 .gauge-power .gauge-icon { fill: var(--meter-power); }
 .gauge-shielding .gauge-icon { fill: var(--meter-shield); }
 .gauge-name {
-  font-size: 0.7rem;
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
   font-weight: 700;
-  color: #e9dfd5;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
-.gauge-row { display: flex; align-items: center; gap: 6px; }
+.gauge-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .gauge-value {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 1.02rem;
+  font-family: var(--font-hud);
+  font-weight: 800;
+  font-size: 1.1rem;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  min-width: 2ch;
+  min-width: 3ch;
 }
 .gauge-bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
-.gauge-fill { height: 100%; border-radius: 999px; transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.gauge-lifeSupport .gauge-fill { background: var(--meter-life); }
-.gauge-power .gauge-fill { background: var(--meter-power); }
-.gauge-shielding .gauge-fill { background: var(--meter-shield); }
+.gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 0 8px currentColor;
+}
+.gauge-lifeSupport .gauge-fill { background: var(--meter-life); color: var(--meter-life); }
+.gauge-power .gauge-fill { background: var(--meter-power); color: var(--meter-power); }
+.gauge-shielding .gauge-fill { background: var(--meter-shield); color: var(--meter-shield); }
 
-/* Danger: red border, striped bar and a "Low" tag, so it never depends on color alone. */
+/* Danger: "Low" tag, striped bar and lighter red number, so it never depends on color alone. */
 .gauge-low {
   display: none;
   flex: none;
-  font-size: 0.64rem;
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
   font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   padding: 0 5px;
   border-radius: 999px;
   background: var(--danger);
   color: #2a0b0b;
 }
-.gauge.is-low { border-color: var(--danger); }
 .gauge.is-low .gauge-low { display: inline-block; }
-.gauge.is-low .gauge-value { color: #ff8f8f; }
+.gauge.is-low .gauge-value { color: var(--danger-text); }
 .gauge.is-low .gauge-fill { background: repeating-linear-gradient(135deg, var(--danger) 0 5px, #b33a3a 5px 10px); }
 
 .gauge-delta {
   position: absolute;
-  right: 6px;
-  top: -16px;
-  font-family: var(--font-display);
+  right: 8px;
+  top: -2px;
+  font-family: var(--font-hud);
   font-weight: 900;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   opacity: 0;
   pointer-events: none;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 .gauge-delta.up { color: var(--ok); }
-.gauge-delta.down { color: #ff8f8f; }
+.gauge-delta.down { color: var(--danger-text); }
 
-@media (min-width: 900px) {
-  .pills { gap: 10px; padding: 26px 12px 12px; }
-  .pill { padding: 7px 12px 8px; }
-  .gauge-icon { width: 17px; height: 17px; }
-  .gauge-name { font-size: 0.85rem; }
-  .gauge-value { font-size: 1.3rem; }
-  .gauge-bar { height: 8px; }
+/* Crew mood chip */
+.mood {
+  position: absolute;
+  top: calc(130px + var(--safe-top));
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 16px);
+  padding: 4px 14px 4px 4px;
+  border-radius: 999px;
+}
+.mood .face { width: 28px; height: 28px; flex: none; }
+.mood p { margin: 0; }
+.crew-text { font-size: 0.82rem; font-weight: 700; line-height: 1.2; }
+.clock-text { display: none; font-family: var(--font-hud); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hud-muted); line-height: 1.3; }
+.mood[data-level="2"], .mood[data-level="3"] { border-color: var(--danger); }
+
+/* The card: a bottom sheet on phones */
+.card {
+  position: absolute;
+  left: max(8px, calc(50% - 330px));    /* full width on phones, at most 660px on tablets */
+  right: max(8px, calc(50% - 330px));
+  bottom: calc(8px + var(--safe-bottom));
+  max-height: 60%;
+  overflow-y: auto;
+  padding: 14px 14px 14px;
+  border-radius: 20px;
+  border-top: 2px solid var(--sunset);
+}
+.card-solar { border-top-color: #ff8fb8; }
+.card-message { border-top-color: var(--ok); }
+body.is-night .card-event { border-top-color: var(--alarm-red); }
+.card-clock { color: var(--sunset); }
+body.is-night .card-event .card-clock { color: #ffa08a; }
+.card-solar .card-clock { color: #ffa9cb; }
+.card-title { margin: 2px 0 4px; font-size: 1.3rem; line-height: 1.15; font-weight: 800; }
+.card-text { font-size: 1rem; line-height: 1.4; margin: 0 0 2px; }
+
+.card-note {
+  margin: 12px 0 0;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  border-left: 3px solid var(--glass-line);
+  padding-left: 10px;
 }
 
-/* "Sol 4" title at the top of the picture at the start of each sol */
+/* "Real science": a disclosure. Folded on phones, open on wide screens. */
+.learn {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 0 12px;
+  margin: 12px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.learn[open], .learn-static { padding-bottom: 12px; }
+.learn p { font-size: 0.95rem; }
+.learn p:last-child { margin-bottom: 0; }
+.learn-label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ok);
+  cursor: pointer;
+  list-style: none;
+}
+.learn-label::-webkit-details-marker { display: none; }
+details .learn-label::before { content: "+"; display: inline-block; width: 1.4em; font-weight: 900; }
+details[open] .learn-label::before { content: "\2212"; }
+.learn-static .learn-label { cursor: default; }
+
+/* Menu and mission log drawer */
+.menu {
+  position: absolute;
+  top: calc(60px + var(--safe-top));
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 210px;
+  padding: 8px;
+}
+.menu .glass-link { text-align: left; }
+.drawer {
+  position: absolute;
+  top: calc(60px + var(--safe-top));
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + var(--safe-bottom));
+  z-index: 6;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+.drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.log { margin: 0; padding-left: 0; list-style: none; }
+.log li { padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.92rem; }
+.log li:last-child { border-bottom: none; }
+.log-tag { display: block; font-family: var(--font-hud); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-muted); }
+
+/* "Sol 4" title over the picture at the start of each sol */
 .sol-title {
   position: absolute;
   left: 0;
   right: 0;
-  top: 40px;
+  top: 23%;
   display: flex;
   flex-direction: column;
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+  z-index: 2;
 }
-.sol-title-num { font-size: clamp(1.6rem, 7vw, 2.8rem); font-weight: 900; line-height: 1; }
-.sol-title-sub { font-size: 0.8rem; font-weight: 700; }
+.sol-title-num { font-family: var(--font-hud); font-size: clamp(1.8rem, 8vw, 3.2rem); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1; }
+.sol-title-sub { font-family: var(--font-hud); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
+
+/* ---------- Game screen: wide screens and phones turned sideways ---------- */
+
+@media (min-width: 760px) and (orientation: landscape) {
+  .hud-top { top: 16px; left: 16px; right: calc(var(--side-card) + 32px); }
+  .meters {
+    top: 76px;
+    left: 16px;
+    right: auto;
+    width: 300px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px 6px;
+  }
+  .gauge + .gauge { border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 10px; }
+  .gauge-icon { width: 17px; height: 17px; }
+  .gauge-name { font-size: 0.72rem; letter-spacing: 0.12em; }
+  .gauge-value { font-size: 1.35rem; }
+  .gauge-bar { height: 7px; }
+  .mood { top: auto; bottom: 16px; left: 16px; max-width: calc(100% - var(--side-card) - 48px); padding: 6px 16px 6px 6px; border-radius: 16px; }
+  .mood .face { width: 40px; height: 40px; }
+  .crew-text { font-size: 0.95rem; }
+  .clock-text { display: block; }
+  .card {
+    left: auto;
+    right: 16px;
+    top: 16px;
+    bottom: auto;
+    width: var(--side-card);
+    max-height: calc(100% - 32px);
+    padding: 20px;
+    border-radius: 22px;
+  }
+  .card-title { font-size: 1.55rem; margin-bottom: 8px; }
+  .card-text { font-size: 1.05rem; line-height: 1.5; margin-bottom: 6px; }
+  .menu { top: 72px; right: calc(var(--side-card) + 32px); }
+  .drawer { top: 72px; left: 330px; right: calc(var(--side-card) + 32px); bottom: 16px; }
+  .sol-title { right: calc(var(--side-card) + 32px); top: 14%; }
+}
+
+/* Short screens (a phone on its side): tighter meters so nothing is cut off. */
+@media (min-width: 760px) and (orientation: landscape) and (max-height: 520px) {
+  .hud-top { top: 8px; }
+  /* meters in one row across the top, so the habitat stays visible */
+  .meters {
+    top: 60px;
+    width: auto;
+    right: calc(var(--side-card) + 32px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    padding: 6px 4px;
+  }
+  .gauge + .gauge { border-top: none; border-left: 1px solid rgba(255, 255, 255, 0.14); padding-top: 0; }
+  .gauge-name { font-size: 0.6rem; letter-spacing: 0.04em; }
+  .gauge-value { font-size: 1.05rem; }
+  .gauge-bar { height: 5px; }
+  .card { top: 8px; max-height: calc(100% - 16px); padding: 14px; }
+  .mood { bottom: 8px; }
+  .mood .face { width: 28px; height: 28px; }
+  .clock-text { display: none; }
+}
 
 /* ---------- Outpost scene (drawn by js/scene.js) ---------- */
 /* Palette from Pixel. Day and night sky colors are artistic choices. */
@@ -391,7 +575,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
    horizon with its blue glow (the real Mars sunset). */
 .sun { fill: #fff3dc; transition: transform 1.4s ease, opacity 1.4s ease, fill 1.4s ease; }
 .sun-corona { fill: #fff1c8; opacity: 0; transition: opacity 0.6s ease; }
-.is-dusk .sun { transform: translate(-30px, 62px); fill: #e4f1ff; }
+.is-dusk .sun { transform: translate(-60px, 38px); fill: #e4f1ff; }
 .is-night .sun { transform: translate(-40px, 110px); opacity: 0; }
 .sun-glow { opacity: 0; transition: opacity 1.4s ease; }
 .is-dusk .sun-glow { opacity: 1; }
@@ -415,7 +599,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
 .is-night .ridge-far { fill: #1F1A26; }
 .is-night .ridge-mid { fill: #221a20; }
 .is-night .ground, .is-night .mound { fill: #2A1A16; }
-.is-night .rock-fg { fill: #120b0a; }
+.is-night .rock-fg { fill: #3a2620; }
 
 /* Dust storm: an ochre layer over the far ridge first, then a light haze. */
 .ridge-dust { fill: #c8955f; opacity: 0; transition: opacity 1s ease; }
@@ -587,118 +771,16 @@ main { max-width: 1180px; margin: 0 auto; padding: 10px 16px 16px; }
 
 /* ---------- Crew face icon (drawn by js/ui.js) ---------- */
 
-.face-head { fill: var(--surface-3); stroke: var(--text-muted); stroke-width: 4; }
+.face-head { fill: rgba(255, 255, 255, 0.08); stroke: var(--text-muted); stroke-width: 4; }
 .face-eye { fill: var(--text); }
-.face-lid { fill: var(--surface-3); }
+.face-lid { fill: #1d1a22; }
 .face-line { fill: none; stroke: var(--text); stroke-width: 5; stroke-linecap: round; }
 .face-line.thin { stroke-width: 3; stroke: var(--text-muted); }
 .face-yawn { fill: var(--space); stroke: var(--text); stroke-width: 4; }
 .face[data-level="2"] .face-head, .face[data-level="3"] .face-head { stroke: var(--danger); }
 
-/* ---------- The card ---------- */
-
-.card { border-top: 4px solid var(--sunset); padding: 14px 16px 16px; }
-.card-solar { border-top-color: #ff8fb8; }
-.card-message { border-top-color: var(--ok); }
-body.is-night .card-event { border-top-color: var(--alarm-red); }
-
-.card-clock { margin: 0 0 2px; font-size: 0.85rem; font-weight: 700; color: var(--sunset); }
-body.is-night .card-event .card-clock { color: #ff9a80; }
-.card-solar .card-clock { color: #ff9fc4; }
-.card-title { margin: 0 0 4px; font-size: 1.32rem; line-height: 1.15; font-weight: 800; }
-.card-text { font-size: 1rem; line-height: 1.4; margin: 0 0 2px; }
-
-@media (min-width: 900px) {
-  .card { padding: 18px 20px 20px; }
-  .card-title { font-size: 1.55rem; margin-bottom: 8px; }
-  .card-text { font-size: 1.05rem; line-height: 1.5; margin-bottom: 6px; }
-}
-
-.card-note {
-  margin: 12px 0 0;
-  font-size: 0.86rem;
-  color: var(--text-muted);
-  border-left: 3px solid var(--border);
-  padding-left: 10px;
-}
-
-/* "Real science": a <details> disclosure. Folded on phones, open on wide screens. */
-.learn {
-  background: var(--surface-2);
-  border-radius: 10px;
-  padding: 0 12px;
-  margin: 12px 0 0;
-  border: 1px solid var(--border);
-}
-.learn[open] { padding-bottom: 12px; }
-.learn p { font-size: 0.95rem; }
-.learn p:last-child { margin-bottom: 0; }
-.learn-label {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--ok);
-  cursor: pointer;
-  list-style: none;
-}
-.learn-label::-webkit-details-marker { display: none; }
-.learn-label::before { content: "+"; display: inline-block; width: 1.2em; font-weight: 900; }
-.learn[open] .learn-label::before { content: "\2212"; }
-
-/* ---------- Log ---------- */
-
-.log, .hits { margin: 0; padding-left: 0; list-style: none; }
-.log li { padding: 6px 0; border-bottom: 1px solid var(--surface-3); font-size: 0.92rem; }
-.log li:last-child { border-bottom: none; }
-.log-tag { display: block; font-size: 0.78rem; color: var(--text-muted); }
-
-/* ---------- Title screen: full-bleed night scene ---------- */
-
-.title-screen { display: block; }
-.title-stage {
-  position: relative;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-top: -10px;
-  height: calc(100vh - 49px);
-  height: calc(100svh - 49px);
-  min-height: 460px;
-  overflow: hidden;
-  background: #0B0E1A;
-}
-.title-stage .scene { position: absolute; inset: 0; }
-.title-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 9vh 16px 6vh;
-  text-align: center;
-}
-.title-head { display: flex; flex-direction: column; align-items: center; }
-.game-title {
-  margin: 0;
-  font-family: var(--font-heavy);
-  font-weight: 900;
-  font-size: clamp(3rem, 15vw, 6.5rem);
-  line-height: 0.95;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #fff6ea;
-  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
-}
-.title-sub { margin: 10px 0 0; font-size: 1.1rem; font-weight: 600; color: #efe4d8; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
-.title-actions { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; }
-.btn-big { min-height: 60px; font-size: 1.2rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
-.title-link { color: #e9f3ff; margin-top: 6px; }
-
 /* ---------- Mission report (end screen) ---------- */
 
-.report-kicker { font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
 .stamp {
   display: inline-block;
   margin: 0 0 10px;
@@ -710,17 +792,17 @@ body.is-night .card-event .card-clock { color: #ff9a80; }
   transform: rotate(-3deg);
 }
 .stamp-won { color: var(--sunset); }
-.stamp-lost { color: var(--danger); }
+.stamp-lost { color: var(--danger-text); }
 .report-sol { font-weight: 700; color: var(--text-muted); }
 .report-chart { margin: 8px 0 12px; }
-.report-chart svg { display: block; width: 100%; height: auto; background: var(--surface-2); border-radius: 10px; border: 1px solid var(--border); }
-.chart-axis { stroke: var(--border); stroke-width: 1; }
+.report-chart svg { display: block; width: 100%; height: auto; background: rgba(0, 0, 0, 0.25); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.14); }
+.chart-axis { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
 .chart-low { stroke: var(--danger); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.6; }
 .chart-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .chart-lifeSupport { stroke: var(--meter-life); }
 .chart-power { stroke: var(--meter-power); }
 .chart-shielding { stroke: var(--meter-shield); stroke-dasharray: 6 3; }
-.hits { padding-left: 20px; list-style: decimal; margin-bottom: 8px; }
+.hits { padding-left: 20px; list-style: decimal; margin: 0 0 8px; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; padding: 0; margin: 8px 0 4px; }
 .chart-legend li { display: flex; align-items: center; gap: 6px; }
 .key { display: inline-block; width: 18px; height: 0; border-top: 3px solid; }
@@ -729,20 +811,20 @@ body.is-night .card-event .card-clock { color: #ff9a80; }
 .key-shielding { border-color: var(--meter-shield); border-top-style: dashed; }
 .key-low { border-color: var(--danger); border-top-style: dotted; border-top-width: 2px; }
 
-/* ---------- Sources ---------- */
+
+/* ---------- Sources and How to play ---------- */
 
 .source-list { padding-left: 20px; }
 .source-list li { margin-bottom: 8px; }
-
-/* ---------- How to play (intro) ---------- */
+.sources h2, .report h2 { margin: 16px 0 6px; }
 
 .intro-panel h1:focus { outline: none; }
 .intro-panel h1:focus-visible { outline: 3px solid var(--sunset); outline-offset: 4px; border-radius: 4px; }
 .intro-art { display: block; width: 100%; max-width: 420px; height: auto; margin: 4px 0 16px; }
-.intro-svg-label { fill: var(--text-muted); font-size: 13px; font-family: var(--font-body); }
+.intro-svg-label { fill: var(--text-muted); font-size: 13px; font-family: var(--font-hud); }
 .intro-bar-earth { fill: #6fa8dc; }
 .intro-bar-mars { fill: var(--rust); }
-.intro-bar-track { fill: var(--surface-3); }
+.intro-bar-track { fill: rgba(255, 255, 255, 0.14); }
 .intro-bar-life { fill: var(--meter-life); }
 .intro-bar-power { fill: var(--meter-power); }
 .intro-bar-shield { fill: var(--meter-shield); }
@@ -753,16 +835,7 @@ body.is-night .card-event .card-clock { color: #ff9a80; }
 .intro-lines .intro-source { font-size: 0.85rem; margin-top: -6px; }
 .intro-buttons { margin-top: 8px; }
 
-/* ---------- Footer ---------- */
-
-.footer {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 8px 16px 32px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  align-items: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+/* No blur in this browser: use nearly solid panels. (At the end so it wins.) */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass.glass-link, .glass.glass-button { background: var(--glass-solid); }
 }
