@@ -307,6 +307,24 @@ var oCareless = summary(dataOff, carelessOff, "careless (fatigue off)");
 check(oCareful.wins > 0 && oCareless.wins < RUNS, "fatigue off: the game can be won and lost");
 
 // ---------------------------------------------------------------------
+// 7b. Milestone 4 checks: the evening card's sunset fact, and scene hints.
+// ---------------------------------------------------------------------
+console.log("\n== Evening card and scene hints ==");
+var ge2 = E.newGame(data, { seed: 2 });
+E.choose(ge2, 1); // full shift -> evening card
+var evening = E.getPrompt(ge2);
+check(evening.kind === "sleep" && data.numbers[evening.factKey] && data.numbers[evening.factKey].status === "verified",
+  "evening card cites verified fact " + evening.factKey);
+var SCENE_KEYS = ["panelsDusty", "greenhouseDark", "dustySky"];
+var badScene = [];
+data.events.forEach(function (ev) {
+  ev.choices.forEach(function (c) {
+    Object.keys(c.scene || {}).forEach(function (k) { if (SCENE_KEYS.indexOf(k) === -1) { badScene.push(ev.id + "." + k); } });
+  });
+});
+check(badScene.length === 0, "every scene hint in events.js is a known picture change " + JSON.stringify(badScene));
+
+// ---------------------------------------------------------------------
 // 8. The How to play intro.
 // ---------------------------------------------------------------------
 console.log("\n== How to play intro ==");

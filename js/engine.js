@@ -437,6 +437,9 @@ var SolShiftEngine = (function () {
   // FATIGUE MODULE: with fatigue on, the plans are about HOW LONG to work
   // (longer = more done, more tired). With fatigue off, they are about WHAT
   // to work on, because longer shifts would have no cost.
+  // A real fact shown on the evening card (backed by marsSunsetBlue in numbers.js).
+  var SUNSET_LEARN = "On Mars, the sky near the setting Sun turns blue. Fine dust in the air lets blue light through more easily than other colors.";
+
   function workPlans(game) {
     if (fatigueOn(game)) {
       return [num(game, "workPlanShort"), num(game, "workPlanFull"), num(game, "workPlanOvertime")];
@@ -483,14 +486,16 @@ var SolShiftEngine = (function () {
       // FATIGUE MODULE: with fatigue off there is no bedtime choice, just the night.
       if (!fatigueOn(game)) {
         return {
-          kind: "sleep", clock: "22:00", title: "Night",
+          kind: "sleep", clock: "Evening", title: "Night",
           text: "The Sun has set and the crew goes to sleep. Mars nights are very cold, so the heaters use power.",
+          learn: SUNSET_LEARN, factKey: "marsSunsetBlue",
           choices: [{ label: "Good night", detail: "Power -" + num(game, "nightPowerUse") + " for the heaters." }]
         };
       }
       var drift = num(game, "solDriftMinutes");
       return {
-        kind: "sleep", clock: "22:00", title: "Bedtime",
+        kind: "sleep", clock: "Evening", title: "Bedtime",
+        learn: SUNSET_LEARN, factKey: "marsSunsetBlue",
         text: "A Mars day (a sol) is about 40 minutes longer than an Earth day. If the crew keeps Earth hours, their body clocks slip away from the Sun, and they sleep worse. " + (game.driftMinutes < 1
           ? "Right now their body clocks match the Sun."
           : "Right now they are " + formatMinutes(game.driftMinutes) + " out of step."),

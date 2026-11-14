@@ -42,6 +42,10 @@
                          arrives later. { reply: "...", effects: {...} }
       skipWork           true = the crew does no work today (storm shelter)
       log                what the mission log says after the choice
+      scene              (optional) how the base picture changes after this
+                         choice, for the given number of sols. Only changes
+                         the drawing, never the game. Keys:
+                           panelsDusty, greenhouseDark, dustySky
 */
 
 var SOL_SHIFT_EVENTS = [
@@ -246,6 +250,7 @@ var SOL_SHIFT_EVENTS = [
       {
         label: "Turn off everything we can until morning",
         effects: { power: -4, lifeSupport: -4 },
+        scene: { greenhouseDark: 1 },
         log: "Greenhouse lights and extra machines were off all night."
       }
     ]
@@ -299,6 +304,7 @@ var SOL_SHIFT_EVENTS = [
       {
         label: "Leave the dust for now",
         effects: { power: -14 },
+        scene: { panelsDusty: 1 },
         log: "The panels stayed dusty. The base made less power today."
       }
     ]
@@ -325,6 +331,7 @@ var SOL_SHIFT_EVENTS = [
       {
         label: "Ask Earth how to fix it",
         effects: { lifeSupport: -5 },
+        scene: { greenhouseDark: 1 },
         askEarth: {
           reply: "Mission control: Swap the fuse behind panel 3, then restart the lights. Your plants should perk up.",
           effects: { lifeSupport: 5 }
@@ -377,11 +384,13 @@ var SOL_SHIFT_EVENTS = [
       {
         label: "Fill the batteries: greenhouse lights off today",
         effects: { lifeSupport: -6 },
+        scene: { greenhouseDark: 1, dustySky: 1 },
         log: "The batteries are full. The plants had a dim day."
       },
       {
         label: "Keep everything running",
         effects: { power: -12 },
+        scene: { dustySky: 1, panelsDusty: 1 },
         log: "The dust arrived and the panels made very little power."
       }
     ]
@@ -557,6 +566,7 @@ var SOL_SHIFT_EVENTS = [
       {
         label: "Pull out the moldy plants",
         effects: { lifeSupport: -8 },
+        scene: { greenhouseDark: 1 },
         log: "The moldy plants are gone, and so is the food they would have made."
       }
     ]

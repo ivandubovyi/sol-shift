@@ -111,6 +111,14 @@ var SOL_SHIFT_NUMBERS = {
     note: "Same NASA page: daily highs about 32 F (0 C), same period. Checked 2026-11-15."
   },
 
+  marsSunsetBlue: {
+    value: "blue near the Sun", unit: "sky color at sunset", kind: "real-world", status: "verified",
+    source: "https://www.jpl.nasa.gov/news/nasas-curiosity-rover-views-serene-sundown-on-mars/",
+    display: "blue near the Sun, because fine dust lets blue light through more easily (Curiosity, 15 April 2015)",
+    label: "Color of a Mars sunset",
+    note: "NASA JPL news: 'The sun dips to a Martian horizon in a blue-tinged sky' and 'Martian sunsets make the blue near the sun's part of the sky much more prominent'. NASA Science PIA19400 explains that fine dust lets blue light through more efficiently. Curiosity Mastcam, sol 956 (15 April 2015). Checked 2026-11-15. The game's day and night sky colors are artistic choices, not measurements."
+  },
+
   // Derived from the two sleep numbers above: 1 - 4.91 / 5.98 = 0.179.
   // The game uses it as "how much less rest a fully out-of-step crew gets".
   // Using a lab sleep number as a game rest number is a game simplification.

@@ -5,8 +5,8 @@
 
   AI DISCLOSURE: the code in this project was written by an AI assistant
   (Claude, made by Anthropic) from the team's spec, and reviewed by the team.
-  See AI-USE.md. No AI-generated images are used: every shape is CSS or
-  inline SVG written in code.
+  See AI-USE.md. No AI-generated images are used: every shape, including the
+  Mars outpost scene (js/scene.js), is CSS or SVG written in code.
 
   Open this file directly in a browser. No server, account or download needed.
 -->
@@ -25,18 +25,24 @@
 
   <header class="topbar">
     <div class="brand">Sol Shift</div>
-    <div class="topbar-status" id="topbar-status" hidden>
-      <span class="chip" id="sol-chip">Sol 1 of 30</span>
-      <span class="chip" id="phase-chip">Day</span>
+    <div class="topbar-right">
+      <div class="topbar-status" id="topbar-status" hidden>
+        <span class="chip" id="sol-chip">Sol 1 of 30</span>
+        <span class="chip" id="phase-chip">Day</span>
+      </div>
+      <!-- Sound is off until the player turns it on. -->
+      <button class="chip chip-button" id="sound-button" type="button" aria-pressed="false">Sound off</button>
     </div>
   </header>
 
   <main id="app">
 
     <!-- START SCREEN -->
-    <section id="start-screen" class="screen">
-      <div class="panel intro">
-        <h1>Sol Shift</h1>
+    <section id="start-screen" class="screen title-screen">
+      <!-- Decorative picture of the base at sunset. -->
+      <div class="stage stage-title"><svg id="title-scene" class="scene" aria-hidden="true" focusable="false"></svg></div>
+      <div class="panel intro title-panel">
+        <h1 class="game-title">Sol Shift</h1>
         <p class="lead">You are in charge of a small base on Mars. Keep it running for 30 sols until the next ship arrives.</p>
         <p>A <strong>sol</strong> is one day on Mars. It is about 24 hours and 40 minutes long, a little longer than a day on Earth.</p>
         <p>Keep three things from running out:</p>
@@ -70,16 +76,25 @@
     <!-- GAME SCREEN -->
     <section id="game-screen" class="screen" hidden>
 
-      <div class="status-column">
+      <!-- The outpost scene. It only shows what the text already says,
+           so it has a short text alternative (set by js/ui.js). -->
+      <div class="stage" id="stage">
+        <svg id="scene" class="scene" focusable="false"></svg>
+        <div class="sol-title" id="sol-title" aria-hidden="true">
+          <span class="sol-title-num" id="sol-title-num"></span>
+          <span class="sol-title-sub" id="sol-title-sub"></span>
+        </div>
+      </div>
+
+      <div class="hud">
         <!-- The three meters -->
-        <div class="panel">
+        <div class="panel gauges-panel">
           <h2 class="panel-title">Base</h2>
-          <div id="meters"></div>
+          <div id="meters" class="gauges"></div>
         </div>
 
         <!-- The crew: tiredness is hidden, shown as a face and words -->
         <div class="panel crew" id="crew-panel">
-          <h2 class="panel-title">Crew</h2>
           <div class="crew-row">
             <svg id="crew-face" class="face" viewBox="0 0 100 100" role="img" aria-label="Crew face"></svg>
             <div>
@@ -113,10 +128,22 @@
 
     <!-- END SCREEN -->
     <section id="end-screen" class="screen" hidden>
-      <div class="panel end">
-        <p class="card-clock" id="end-sol"></p>
+      <div class="panel end report">
+        <p class="report-kicker">Mission report</p>
+        <p class="stamp" id="end-stamp"></p>
         <h1 id="end-title"></h1>
+        <p class="report-sol" id="end-sol"></p>
         <p id="end-text"></p>
+        <figure class="report-chart">
+          <svg id="end-chart" viewBox="0 0 300 120" role="img"></svg>
+          <ul class="chart-legend small" aria-hidden="true">
+            <li><span class="key key-lifeSupport"></span>Life support</li>
+            <li><span class="key key-power"></span>Power</li>
+            <li><span class="key key-shielding"></span>Shielding</li>
+            <li><span class="key key-low"></span>Running low</li>
+          </ul>
+          <figcaption class="small muted" id="end-chart-caption"></figcaption>
+        </figure>
         <div class="learn">
           <p class="learn-label">Real science</p>
           <p id="end-fact"></p>
@@ -168,6 +195,8 @@
   <script src="data/intro.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/intro.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/sound.js"></script>
   <script src="js/ui.js"></script>
 </body>
 </html>
