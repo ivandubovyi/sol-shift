@@ -4,9 +4,10 @@
   NOTE: this code file was written by an AI assistant (Claude) from the team's
   spec. The realistic look was the team lead's direction; the framing and palette
   came from Pixel, the team's AI designer bot. See AI-USE.md.
-  No image files and no generated images are used: every shape below is
-  written by hand in code. A real NASA photo can be added later as the
-  backdrop (see BACKDROP below); until then the drawn sky and ridges show.
+  The base, the crew and the ground are written by hand in code. Behind
+  them sit two real NASA photos from the Curiosity rover (see BACKDROP
+  below): a mountain by day and a sunset at dusk. No generated images are
+  used anywhere.
 
   This file only DRAWS. It never changes the game. js/ui.js looks at the
   game and calls these functions:
@@ -38,11 +39,13 @@
     - The whole base sits in one group that gets a simple color filter at
       dusk, at night and in a dust storm (no blur, so it stays fast).
       Window lights are drawn outside that group, so they stay bright.
-    - Haze makes the far ridge pale; tiny dust motes drift in the air.
+    - Haze makes the far land pale; tiny dust motes drift in the air.
+    - The drawn ground and the light on the base use colors measured from
+      the photos, so the drawing and the photos sit together.
 
   Layout of the drawing (SVG units, y grows downward):
-    sky above y 230, far ridge around y 230, mid dunes around y 260,
-    foreground ground from y 282. The habitat is the hero, a little left
+    sky above y 230, far mountain or hills around y 180 to 250, mid dunes
+    around y 260, foreground ground from y 282. The habitat is the hero, a little left
     of the middle. Panels sit behind it on the left; the greenhouse tube
     and the dish sit further back on the right.
 */
@@ -53,24 +56,43 @@ var SolShiftScene = (function () {
   var NS = "http://www.w3.org/2000/svg";
 
   // ---------------------------------------------------------------------
-  // BACKDROP: a place for real NASA photos behind the base.
-  // Leave src empty to use the drawn sky and ridges. To use a photo, put the
-  // file in the project (for example images/PIA16768.jpg), fill in src,
-  // credit and source, and list it on the Sources screen. Only use NASA
-  // images with no logos, and keep the credit exactly as NASA gives it.
-  //   day:  shown in the day phase
-  //   dusk: shown at sunset
-  // The photo covers the sky and the far ridge; the drawn base, ground and
-  // crew stay in front of it. x, y, width, height place it in scene units.
+  // BACKDROP: the real NASA photos behind the base.
+  // Both were taken by the Curiosity rover in Gale Crater on Mars. They were
+  // cropped and faded at the edges by tools/make-backdrops.py; that file
+  // says exactly what was done. The credit is kept as NASA gives it, and
+  // both photos are listed on the Sources screen (js/ui.js reads this list).
+  //   day:  the mountain in the middle of Gale Crater (Mount Sharp). NASA
+  //         white-balanced this photo, which turns the sky Earth-blue, so
+  //         the sky was removed and the game draws its own. The same photo,
+  //         darkened, is the mountain's outline at night.
+  //   dusk: a real Mars sunset. The blue glow and the Sun are in the photo.
+  // x, y, width, height place each photo in scene units. Set src to "" to
+  // go back to the drawn sky and ridges.
   // ---------------------------------------------------------------------
   var BACKDROP = {
-    day:  { src: "", credit: "", source: "", x: 0, y: 60, width: 800, height: 230 },
-    dusk: { src: "", credit: "", source: "", x: 0, y: 60, width: 800, height: 230 }
+    day: {
+      src: "images/mars-day-PIA16768.webp",
+      title: "Mount Sharp Panorama in White-Balanced Colors (PIA16768)",
+      credit: "NASA/JPL-Caltech/MSSS",
+      source: "https://science.nasa.gov/photojournal/mount-sharp-panorama-in-white-balanced-colors/",
+      change: "We removed the sky, cropped the caption strip and darken it at night.",
+      x: 74, y: 175.3, width: 1000, height: 96.7
+    },
+    dusk: {
+      src: "images/mars-dusk-PIA19400.webp",
+      title: "Sunset in Mars' Gale Crater (PIA19400)",
+      credit: "NASA/JPL-Caltech/MSSS/Texas A&M Univ.",
+      source: "https://science.nasa.gov/photojournal/sunset-in-mars-gale-crater/",
+      change: "We cropped the bottom and faded the top and left edges.",
+      x: 185, y: -268, width: 1000, height: 594.5
+    }
   };
 
-  // The Sun's size: from Mars it looks about two-thirds as wide as from Earth
-  // (sunSizeFromMars in data/numbers.js). EARTH_SUN_R is the radius an
-  // Earth-seen Sun would have at this drawing's scale.
+  // The daytime Sun's size: from Mars it looks about two-thirds as wide as
+  // from Earth (sunSizeFromMars in data/numbers.js). EARTH_SUN_R is the
+  // radius an Earth-seen Sun would have at this drawing's scale. At dusk the
+  // Sun is the real one in the NASA photo. That photo was taken zoomed in,
+  // so its Sun looks larger than the drawn daytime one.
   var EARTH_SUN_R = 9;
   var MARS_SUN_R = EARTH_SUN_R * 0.67;
 
@@ -163,18 +185,27 @@ var SolShiftScene = (function () {
     var label;
 
     svg.textContent = "";
+    svg.classList.remove("photo-day", "photo-dusk");
+
+    function addPhoto(b, cls) {
+      var img = add(svg, "image", { x: b.x, y: b.y, width: b.width, height: b.height, preserveAspectRatio: "none", "class": cls });
+      img.setAttribute("href", b.src);
+      return img;
+    }
     svg.setAttribute("viewBox", "120 140 560 220");
     svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
 
     var defs = add(svg, "defs");
     // Skies. Day and night colors are artistic choices, not measurements.
     gradient(defs, P + "sky-day", [["0", "#c99172"], ["0.55", "#e2b08c"], ["1", "#ecc4a2"]], "down", [0, 60, 0, 250]);
-    gradient(defs, P + "sky-dusk", [["0", "#24243e"], ["0.7", "#5d4656"], ["1", "#8a5a5c"]], "down", [0, 60, 0, 240]);
+    // The dusk sky uses colors measured from the NASA sunset photo, so the
+    // photo's faded edges blend into it.
+    gradient(defs, P + "sky-dusk", [["0", "#a0a6ae"], ["0.62", "#8c949f"], ["1", "#6b727b"]], "down", [0, -268, 0, 215]);
     gradient(defs, P + "sky-night", [["0", "#070912"], ["1", "#151326"]], "down", [0, 60, 0, 250]);
     gradient(defs, P + "dusk-band", [["0", "#E58A5A", 0], ["0.55", "#E58A5A", 0.6], ["1", "#E58A5A", 0]]);
     // Haze near the horizon: distant land fades into the sky color.
     gradient(defs, P + "haze-day", [["0", "#e7bc98", 0], ["0.5", "#e7bc98", 0.75], ["1", "#e7bc98", 0]]);
-    gradient(defs, P + "haze-dusk", [["0", "#7a5562", 0], ["0.5", "#7a5562", 0.6], ["1", "#7a5562", 0]]);
+    gradient(defs, P + "haze-dusk", [["0", "#6b727b", 0], ["0.5", "#6b727b", 0.5], ["1", "#6b727b", 0]]);
     radial(defs, P + "blue-glow", "#9ccaf5", 0.85);   // the real blue glow around a Mars sunset
     radial(defs, P + "sun-glow", "#fff4dc", 0.55);
     radial(defs, P + "window-light", "#FFC46B", 0.7);
@@ -200,7 +231,8 @@ var SolShiftScene = (function () {
     add(hatch, "line", { x1: 0, y1: 0, x2: 0, y2: 5, stroke: "#7c4a2a", "stroke-width": 2.5 });
 
     // Lighting for the whole base (cheap color filters, no blur).
-    tintFilter(defs, P + "light-dusk", 0.62, 0.52, 0.62);
+    tintFilter(defs, P + "light-dusk", 0.5, 0.53, 0.62);     // cool, like the light in the sunset photo
+    tintFilter(defs, P + "photo-night", 0.15, 0.18, 0.34);  // turns the day mountain into a night outline
     tintFilter(defs, P + "light-night", 0.36, 0.35, 0.46);
     tintFilter(defs, P + "light-dust", 0.72, 0.6, 0.48);
     tintFilter(defs, P + "light-dust-night", 0.2, 0.17, 0.15);
@@ -235,16 +267,19 @@ var SolShiftScene = (function () {
       add(streaks, "line", { x1: p[0], y1: p[1], x2: p[0] - 34, y2: p[1] + 19, "class": "streak" });
     });
 
-    // Optional NASA photo backdrops (empty for now, see BACKDROP).
-    ["day", "dusk"].forEach(function (phase) {
-      var b = BACKDROP[phase];
-      if (!b.src) { return; }
-      var img = add(svg, "image", { x: b.x, y: b.y, width: b.width, height: b.height, preserveAspectRatio: "xMidYMax slice", "class": "backdrop backdrop-" + phase });
-      img.setAttribute("href", b.src);
-    });
-
     // --- Land: far ridge (pale with distance), haze, mid dunes, ground ---
     add(svg, "path", { d: RIDGE_FAR, "class": "ridge-far" });
+    // The NASA photos (see BACKDROP). They sit in front of the drawn far
+    // ridge, which only shows where a photo is missing or fades out.
+    if (BACKDROP.day.src) {
+      svg.classList.add("photo-day");
+      addPhoto(BACKDROP.day, "backdrop backdrop-day");
+      addPhoto(BACKDROP.day, "backdrop backdrop-night").setAttribute("filter", "url(#" + P + "photo-night)");
+    }
+    if (BACKDROP.dusk.src) {
+      svg.classList.add("photo-dusk");
+      addPhoto(BACKDROP.dusk, "backdrop backdrop-dusk");
+    }
     add(svg, "path", { d: RIDGE_FAR, "class": "ridge-dust" });   // dust storms hide the far ridge first
     add(svg, "rect", { x: -1500, y: 196, width: 4000, height: 64, fill: "url(#" + P + "haze-day)", "class": "haze haze-day" });
     add(svg, "rect", { x: -1500, y: 196, width: 4000, height: 64, fill: "url(#" + P + "haze-dusk)", "class": "haze haze-dusk" });

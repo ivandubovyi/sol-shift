@@ -355,5 +355,27 @@ var tiredOff = INTRO.screens.some(function (sc) { return Intro.visibleLines(sc, 
 check(tiredOn, "fatigue on: intro has the tired-crew line");
 check(!tiredOff, "fatigue off: intro has no tired-crew line");
 
+// ---------------------------------------------------------------------
+// 9. The NASA photos and the font: files present, small, and credited.
+// ---------------------------------------------------------------------
+console.log("\n== Photos and font ==");
+var fs = require("fs");
+var sceneCode = fs.readFileSync(path.join(root, "js/scene.js"), "utf8");
+var pageCode = fs.readFileSync(path.join(root, "index.html"), "utf8");
+var uiCode = fs.readFileSync(path.join(root, "js/ui.js"), "utf8");
+[["images/mars-day-PIA16768.webp", "NASA/JPL-Caltech/MSSS", "mount-sharp-panorama-in-white-balanced-colors"],
+ ["images/mars-dusk-PIA19400.webp", "NASA/JPL-Caltech/MSSS/Texas A&M Univ.", "sunset-in-mars-gale-crater"]].forEach(function (photo) {
+  var file = path.join(root, photo[0]);
+  var size = fs.existsSync(file) ? fs.statSync(file).size : 0;
+  check(size > 0 && size <= 400 * 1024, photo[0] + " is in the project and under 400 KB (" + Math.round(size / 1024) + " KB)");
+  check(sceneCode.indexOf('src: "' + photo[0] + '"') !== -1, "scene.js uses " + photo[0]);
+  check(sceneCode.indexOf('credit: "' + photo[1] + '"') !== -1, photo[0] + " carries NASA's credit: " + photo[1]);
+  check(sceneCode.indexOf(photo[2]) !== -1, photo[0] + " links to its NASA page");
+});
+check(pageCode.indexOf('id="photo-list"') !== -1 && uiCode.indexOf("SolShiftScene.BACKDROP") !== -1, "the Sources screen lists the photos from scene.js");
+check(fs.existsSync(path.join(root, "fonts/Orbitron-latin.woff2")) && fs.existsSync(path.join(root, "fonts/Orbitron-OFL.txt")),
+  "the Orbitron font and its license file are in the project");
+check(!/https?:\/\/fonts\.g/.test(pageCode + fs.readFileSync(path.join(root, "css/style.css"), "utf8")), "no font is fetched from the internet");
+
 console.log("\n" + (failures === 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED"));
 process.exitCode = failures === 0 ? 0 : 1;

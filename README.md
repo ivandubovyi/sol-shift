@@ -6,7 +6,7 @@ You run a small Mars base for 30 sols. Keep three meters up: life support, power
 
 Made for ages 7 to 12. No account, no download, no server needed.
 
-**AI disclosure:** the code in this repository was written by an AI assistant (Claude, by Anthropic) from the team's spec. See [AI-USE.md](AI-USE.md). There are no AI-generated images; every shape is CSS or SVG written in code.
+**AI disclosure:** the code in this repository was written by an AI assistant (Claude, by Anthropic) from the team's spec. See [AI-USE.md](AI-USE.md). There are no AI-generated images. The base, crew and ground are CSS or SVG written in code; the mountain and the sunset behind them are two real NASA photos (credits below).
 
 ## How to open it
 
@@ -45,28 +45,40 @@ The outpost scene fills the whole screen; the page never scrolls. Everything els
 - **Phones held upright:** sol and Menu at the top, the three meters in a glass bar under them, the crew chip below that, and the card as a bottom sheet. The camera (`updateCamera()` in `js/ui.js`) keeps the habitat between the top bar and the sheet.
 - **Wide screens and phones on their side:** meters top-left, crew chip bottom-left, the card as a panel on the right. Short screens put the meters in one row.
 - **Menu:** Mission log (a glass drawer), How to play, Sources, Sound, and Full screen. The Full screen button only appears where the browser supports it (not on iPhone Safari), and the game never needs it.
-- **Type:** labels and numbers use `--font-hud` (system monospace faces, capitals, wide spacing, numbers that line up). Event text uses the plain system face so young players can read it. Nothing is downloaded. To try a self-hosted font later, change `--font-hud` in `css/style.css`.
+- **Type:** labels and numbers use `--font-hud`, which is Orbitron, a free font under the SIL Open Font License (`fonts/Orbitron-latin.woff2`, license in `fonts/Orbitron-OFL.txt`, from Google Fonts). The file is inside the project, so nothing is fetched from the internet and the game works offline. If the file is missing, a monospace system font is used. Event text uses the plain system face so young players can read it.
 - **Contrast:** the worst case is the brightest day sky during a solar flare flash. Measured over it, glass text is at least 4.5:1 (see the milestone 5 report in AI-USE.md for the numbers).
 
 ## The outpost scene
 
-**Realistic look (milestone 7, the team lead's direction).** The base follows real NASA surface-habitat ideas: an inflatable fabric module with a metal airlock, a shelter berm of piled soil (regolith) for radiation protection, flat solar arrays on low frames, a greenhouse tube and a dish on a tripod mast. Everything is shaded from one Sun direction, has a soft contact shadow, and casts a shadow away from the Sun (short by day, long at dusk, none at night). The whole base is lit together by a cheap color filter for dusk, night and dust storms; window lights are drawn outside it so they stay bright. Haze makes the far ridge pale, dust motes drift in the air, and the Sun is drawn about two-thirds as wide as it would look from Earth (`sunSizeFromMars` in `data/numbers.js`). The crew wear suits with backpacks, gloves and boots, and gold-tinted visors that reflect the sky; there are no faces. Tired crews slump; exhausted crews stretch one arm up.
+**Realistic look (milestone 7, the team lead's direction).** The base follows real NASA surface-habitat ideas: an inflatable fabric module with a metal airlock, a shelter berm of piled soil (regolith) for radiation protection, flat solar arrays on low frames, a greenhouse tube and a dish on a tripod mast. Everything is shaded from one Sun direction, has a soft contact shadow, and casts a shadow away from the Sun (short by day, long at dusk, none at night). The whole base is lit together by a cheap color filter for dusk, night and dust storms; window lights are drawn outside it so they stay bright. Haze makes the far land pale, dust motes drift in the air, and the daytime Sun is drawn about two-thirds as wide as it would look from Earth (`sunSizeFromMars` in `data/numbers.js`). The crew wear suits with backpacks, gloves and boots, and gold-tinted visors that reflect the sky; there are no faces. Tired crews slump; exhausted crews stretch one arm up.
 
-**Adding a NASA photo backdrop later.** In `js/scene.js`, `BACKDROP` has a `day` and a `dusk` slot. Each takes `src` (a file in the project), `credit` (exactly as NASA gives it) and `source` (the NASA page). With `src` empty, the drawn sky and ridges show. The photo sits behind the ground and the base. If you add one, also list it on the Sources screen.
+**Real Mars behind the base (milestone 8, the team lead's direction).** Two photos taken by NASA's Curiosity rover in Gale Crater sit behind the drawn base. The team lead approved downloading them on Nov 14, 2026.
 
-The scene is drawn in code by `js/scene.js` (SVG shapes, no image files, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game. The framing, palette and crew poses follow art direction from Pixel, the team's AI designer bot.
+| Used for | NASA photo | Credit | What we changed |
+|---|---|---|---|
+| Day, and darkened as the mountain's outline at night | [Mount Sharp Panorama in White-Balanced Colors, PIA16768](https://science.nasa.gov/photojournal/mount-sharp-panorama-in-white-balanced-colors/) | NASA/JPL-Caltech/MSSS | Sky removed, caption strip cropped off, far ends faded, shrunk to 76 KB |
+| Evening card | [Sunset in Mars' Gale Crater, PIA19400](https://science.nasa.gov/photojournal/sunset-in-mars-gale-crater/) | NASA/JPL-Caltech/MSSS/Texas A&M Univ. | Bottom cropped, top and left edges faded, shrunk to 27 KB |
+
+- **Why the day sky is still drawn.** NASA white-balanced the mountain photo to show the rocks as they would look under Earth's light. That makes its sky blue like Earth's, which is not how Mars looks to the eye. So only the mountain is used, and the game draws its own dusty sky (an artistic choice).
+- **The sunset is real.** The blue glow and the Sun at dusk are in the photo, not drawn. That photo was taken zoomed in, so its Sun looks larger than the drawn daytime Sun.
+- **Two directions.** The two photos look in different directions from the rover, so the far land changes shape between day and evening.
+- **Matching.** The drawn ground and the light on the base at dusk use colors measured from the photos.
+- **Rules followed.** NASA and JPL allow their photos to be used without asking, with the credit line, as long as no endorsement is implied. There are no NASA or JPL logos in the game. Both photos are also credited on the Sources screen.
+- **To change or remove a photo:** edit `BACKDROP` in `js/scene.js`. With `src` set to `""`, the drawn sky and ridges come back. `tools/make-backdrops.py` records exactly how the two files were made.
+
+The base, crew and ground are drawn in code by `js/scene.js` (SVG shapes, no generated images). `js/ui.js` decides what it should show from the game state; the scene never changes the game. The framing, palette and crew poses follow art direction from Pixel, the team's AI designer bot.
 
 | What happens in the game | What the picture shows |
 |---|---|
-| Day phase | Warm dusty sky (an artistic choice), pale Sun, three astronauts: one brushing the panels, one carrying a crate, one pointing at the dish |
-| Evening card | A small blue Sun at the horizon with a blue glow (real: see `marsSunsetBlue` in `data/numbers.js`), orange band at the horizon |
-| Night | Dark sky, stars in three sizes; the only warm light is the habitat windows, spilling onto the ground; sleeping heads with a "z Z" |
+| Day phase | Warm dusty sky (an artistic choice), the real Mount Sharp behind the base, pale Sun, three astronauts: one brushing the panels, one carrying a crate, one pointing at the dish |
+| Evening card | The real NASA photo of a blue Mars sunset behind the base (see `marsSunsetBlue` in `data/numbers.js`) |
+| Night | Dark sky, stars in three sizes, the mountain as a dark outline; the only warm light is the habitat windows, spilling onto the ground; sleeping heads with a "z Z" |
 | Night card (like the 3 a.m. pump fault) | Red alarm light on the ground, red roof beacon, one crew member at the door with a torch, two still asleep |
 | Crew getting tired / very tired (fatigue on) | Astronauts slump; when very tired a small yawn shows in the visor |
 | Storm shelter chosen | A shield dome over the habitat, crew inside |
 | Real solar flare card | One soft 600 ms flash (never repeated), a bright ring around the Sun, pink-tinted sky |
 | Real particle storm card | Same, plus fast streaks across the sky |
-| Dust cards | Dust on the panels; dust storms cover the far ridge first, then a light haze |
+| Dust cards | Dust on the panels; dust storms hide the far mountain first, then a light haze |
 | Greenhouse lights off | Dark greenhouse, dull plants (at night the greenhouse glows green) |
 | A question to Earth is waiting | The dish sends signal waves until the answer arrives; its small red light blinks every 3 s |
 | Fatigue switched off | No sleeping, slumping or yawning, and no crew chip |
@@ -146,7 +158,9 @@ index.html              the page. Loads the data files, then the engine, then th
 css/style.css           all the styles. Colors are variables at the top
 js/engine.js            the game rules. Knows nothing about the web page, so it can be tested in Node
 js/ui.js                draws the screen and handles button presses
-js/scene.js             the Mars outpost picture, drawn with SVG in code (no image files)
+js/scene.js             the Mars outpost picture: base, crew and ground drawn with SVG in code, NASA photos behind
+images/                 the two NASA photos (cropped and shrunk, credits in js/scene.js and on the Sources screen)
+fonts/                  the Orbitron font file and its license
 js/sound.js             tiny sound effects made in code with Web Audio (off until turned on)
 js/intro.js             the How to play screens
 data/intro.js           the How to play words
@@ -157,6 +171,7 @@ data/space-weather.js   real solar events from NASA DONKI, May 2024 (generated, 
 data/donki-raw/         the full, unedited DONKI responses the snapshot came from
 tools/playtest.js       headless test: robot players run the real engine in Node
 tools/make-space-weather.py   rebuilds data/space-weather.js from data/donki-raw/
+tools/make-backdrops.py       how the two NASA photos were cropped (standard-library Python)
 AI-USE.md               how AI was used, as the Space Apps rules require
 ```
 

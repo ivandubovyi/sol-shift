@@ -171,7 +171,7 @@
 
   function renderTopbar() {
     var total = DATA.numbers.missionLengthSols.value;
-    $("sol-chip").textContent = game.sol + "/" + total;
+    $("sol-chip").textContent = game.sol + " / " + total;   // spaces keep "1 / 30" readable in the HUD font
     $("sol-box").setAttribute("aria-label", "Sol " + game.sol + " of " + total + ", " + (game.phase === "day" ? "day" : "night"));
     $("phase-chip").textContent = game.phase === "day" ? "Day" : "Night";
     document.body.classList.toggle("is-night", game.phase === "night");
@@ -549,6 +549,22 @@
       li.appendChild(document.createTextNode((entry.display || entry.value + " " + entry.unit) + ". "));
       li.appendChild(makeLink(entry.source, sourceName(entry.source)));
       list.appendChild(li);
+    });
+
+    // The NASA photos behind the base, with NASA's credit lines.
+    var photos = $("photo-list");
+    photos.textContent = "";
+    ["day", "dusk"].forEach(function (phase) {
+      var b = SolShiftScene.BACKDROP[phase];
+      if (!b.src) { return; }
+      var item = document.createElement("li");
+      var name = document.createElement("strong");
+      name.textContent = (phase === "day" ? "Day and night: " : "Sunset: ");
+      item.appendChild(name);
+      item.appendChild(makeLink(b.source, b.title));
+      // (one credit already ends with a period: "Univ.")
+      item.appendChild(document.createTextNode(". Credit: " + b.credit + (/\.$/.test(b.credit) ? " " : ". ") + b.change));
+      photos.appendChild(item);
     });
 
     var sw = DATA.spaceWeather;

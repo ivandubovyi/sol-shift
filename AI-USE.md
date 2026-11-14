@@ -64,3 +64,16 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **Realistic look.** The move from a cartoon look to a realistic Mars was the team lead's direction. An AI assistant (Claude) redrew the scene in code: a NASA-style inflatable habitat with a regolith berm, flat solar arrays, a greenhouse tube and a dish on a mast, one-direction lighting with cast and contact shadows, distance haze, drifting dust motes, a dust-storm brown-out, and suited crew with reflective visors and no faces. All of the art is code-drawn SVG and CSS. No images were downloaded or generated, and no fonts were added.
 - **Research.** The AI assistant read NASA pages and checked file sizes (without downloading) for possible NASA photo backdrops, and added a verified fact about how big the Sun looks from Mars. A `BACKDROP` setting in `js/scene.js` is ready for a photo if the team approves one.
 - **Game rules unchanged.** No balance numbers were changed.
+
+## Milestone 8 (Nov 14, 2026)
+
+- **Real Mars photos.** The team lead asked for the game to feel like the real world and approved three downloads personally on Nov 14, 2026: two NASA photos and one font. An AI assistant (Claude) downloaded them from the official pages, looked at each file, and wired them in.
+  - `images/mars-day-PIA16768.webp` is from "Mount Sharp Panorama in White-Balanced Colors" (PIA16768), credit NASA/JPL-Caltech/MSSS. The AI assistant removed the sky (NASA's white-balancing makes it Earth-blue), cropped off the caption strip and faded the far ends. The game darkens the same photo for the night outline.
+  - `images/mars-dusk-PIA19400.webp` is from "Sunset in Mars' Gale Crater" (PIA19400), credit NASA/JPL-Caltech/MSSS/Texas A&M Univ. The AI assistant cropped the bottom and faded the top and left edges.
+  - Both are real photographs, not AI-generated. No pixels were painted or generated. `tools/make-backdrops.py` (written by the AI assistant) records the exact steps. No NASA or JPL logos are used.
+- **Font.** `fonts/Orbitron-latin.woff2` is the Orbitron font from Google Fonts (SIL Open Font License 1.1, license text in `fonts/Orbitron-OFL.txt`). It is used for labels and numbers only.
+- **Matching pass.** The AI assistant changed the drawn ground colors and the dusk lighting to colors measured from the photos, hid the drawn Sun and far ridge where a photo replaces them, put spaces in the sol counter ("1 / 30") so it reads clearly in the new font, and added the photo credits to the Sources screen and `README.md`.
+- **Image rules check.** The AI assistant read the JPL Image Use Policy and NASA's Images and Media page: the photos may be used without prior permission, with the credit line, and without implying endorsement.
+- **This replaces two earlier statements.** "All shapes are CSS or SVG written in code" and "No fonts, images or sounds are downloaded" were true when written. From this milestone the game also contains the two NASA photos and the one font listed above. There are still no AI-generated images, audio or video.
+- **Date note.** The headings for milestones 2 to 7 above say Nov 15, 2026. That date looks wrong: this entry was written on Nov 14, 2026, after them. The team lead should confirm the real dates before submitting.
+- **Game rules unchanged.** No balance numbers were changed.

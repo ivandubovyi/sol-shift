@@ -13,14 +13,26 @@
   Phones held upright: meters across the top, the card as a bottom sheet.
   Wide screens and phones turned sideways: meters top-left, card on the right.
 
-  Fonts: system fonts only, nothing is downloaded, so the game works offline.
-  Labels and numbers use --font-hud (a monospace look); event text uses a
-  plain readable face for young players. To try a self-hosted font later,
-  change --font-hud in one place.
+  Fonts: labels and numbers use --font-hud, which is Orbitron, a free font
+  (SIL Open Font License, see fonts/Orbitron-OFL.txt). Its file is inside
+  the project, so the game still works offline and nothing is fetched from
+  the internet. If the font file is missing, a monospace system font is
+  used instead. Event text uses a plain readable system face for young
+  players.
 
   Anyone who asks their computer for reduced motion gets no movement and
   no flashes.
 */
+
+/* Orbitron by The Orbitron Project Authors, from Google Fonts.
+   License: fonts/Orbitron-OFL.txt. One file covers weights 400 to 900. */
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("../fonts/Orbitron-latin.woff2") format("woff2");
+}
 
 :root {
   /* Base surfaces (used behind glass when blur is not supported) */
@@ -56,8 +68,8 @@
   --meter-power: #f2c14e;
   --meter-shield: #a395f5;
 
-  /* Type (all already on the computer) */
-  --font-hud: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Type (Orbitron is in the fonts folder; the rest are already on the computer) */
+  --font-hud: "Orbitron", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
   --font-heavy: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -569,9 +581,16 @@ details[open] .learn-label::before { content: "\2212"; }
 .dusk-band { opacity: 0; transition: opacity 1.4s ease; }
 .is-dusk .dusk-band { opacity: 1; }
 
-/* Optional NASA photo backdrops (see BACKDROP in js/scene.js) */
+/* The real NASA photos behind the base (see BACKDROP in js/scene.js).
+   Where a photo is used, the drawn parts it replaces are hidden. */
 .backdrop { opacity: 0; transition: opacity 1.4s ease; }
-.is-day .backdrop-day, .is-dusk .backdrop-dusk { opacity: 1; }
+.is-day .backdrop-day, .is-dusk .backdrop-dusk, .is-night .backdrop-night { opacity: 1; }
+.photo-day.is-day .ridge-far, .photo-day.is-night .ridge-far { opacity: 0; }
+.photo-day .ridge-dust { display: none; }
+.photo-day.is-dusty.is-day .backdrop-day { opacity: 0.3; }     /* a dust storm hides the far mountain first */
+.photo-day.is-dusty.is-night .backdrop-night { opacity: 0.3; }
+/* The sunset photo has the real Sun and its blue glow in it. */
+.photo-dusk.is-dusk .sun, .photo-dusk.is-dusk .sun-halo, .photo-dusk.is-dusk .sun-glow, .photo-dusk.is-dusk .dusk-band { opacity: 0; }
 
 .star { fill: #f4f1ff; }
 .stars { opacity: 0; transition: opacity 1.4s ease; }
@@ -598,15 +617,17 @@ details[open] .learn-label::before { content: "\2212"; }
 
 /* Land: the far ridge is pale and low-contrast (haze), nearer land is
    darker and warmer. */
-.ridge-far { fill: #c99474; transition: fill 1.4s ease; }
-.ridge-mid { fill: #a35e3c; transition: fill 1.4s ease; }
-.ground { fill: #7e4127; transition: fill 1.4s ease; }
+.ridge-far { fill: #c99474; transition: fill 1.4s ease, opacity 1.4s ease; }
+.ridge-mid { fill: #96664a; transition: fill 1.4s ease; }
+.ground { fill: #744630; transition: fill 1.4s ease; }
 .haze { opacity: 0; transition: opacity 1.4s ease; }
 .is-day .haze-day { opacity: 1; }
+.photo-day.is-day .haze-day { opacity: 0.55; }   /* the photo has real haze of its own */
 .is-dusk .haze-dusk { opacity: 1; }
-.is-dusk .ridge-far { fill: #5d4552; }
-.is-dusk .ridge-mid { fill: #46302f; }
-.is-dusk .ground { fill: #3a221d; }
+/* Dusk land colors are measured from the NASA sunset photo. */
+.is-dusk .ridge-far { fill: #4f5258; }
+.is-dusk .ridge-mid { fill: #33333a; }
+.is-dusk .ground { fill: #1f1d20; }
 .is-night .ridge-far { fill: #1c1924; }
 .is-night .ridge-mid { fill: #1f171b; }
 .is-night .ground { fill: #241612; }
@@ -619,11 +640,11 @@ details[open] .learn-label::before { content: "\2212"; }
 .rock-fg { fill: #5a2c18; transition: fill 1.4s ease; }
 .rock-lit { fill: none; stroke: #b8754e; stroke-width: 0.8; opacity: 0.7; }
 .rock-shadow { fill: #000; opacity: 0.22; }
-.ground-lip { fill: #5f2f1b; transition: fill 1.4s ease; }
-.is-dusk .dune-line, .is-dusk .track { stroke: #24130f; }
-.is-dusk .rock-fg { fill: #2a1813; }
-.is-dusk .rock-lit { stroke: #8a5a5c; opacity: 0.4; }
-.is-dusk .ground-lip { fill: #2c1915; }
+.ground-lip { fill: #553222; transition: fill 1.4s ease; }
+.is-dusk .dune-line, .is-dusk .track { stroke: #0e0d10; }
+.is-dusk .rock-fg { fill: #151417; }
+.is-dusk .rock-lit { stroke: #7f8894; opacity: 0.4; }
+.is-dusk .ground-lip { fill: #131214; }
 .is-night .dune-line, .is-night .track { stroke: #130b09; }
 .is-night .rock-fg { fill: #1a100d; }
 .is-night .rock-lit { opacity: 0; }
@@ -769,7 +790,7 @@ details[open] .learn-label::before { content: "\2212"; }
 
 /* Dust motes in the air */
 .mote { fill: #f0d3b0; opacity: 0.55; }
-.is-dusk .mote { fill: #c9a5a0; opacity: 0.35; }
+.is-dusk .mote { fill: #c3ccd8; opacity: 0.35; }
 .is-night .motes { opacity: 0.15; }
 
 /* Dust storm: a brown-out. The far ridge goes first, then a thick haze;
