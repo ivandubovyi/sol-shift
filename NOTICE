@@ -1,0 +1,19 @@
+Sol Shift
+Copyright 2026 the Sol Shift team
+
+The code in this repository is licensed under the Apache License,
+Version 2.0 (see LICENSE).
+
+Things in this repository that are NOT covered by that license and keep
+their own terms:
+
+- images/mars-day-PIA16768.webp, from "Mount Sharp Panorama in
+  White-Balanced Colors" (PIA16768). Credit: NASA/JPL-Caltech/MSSS.
+- images/mars-dusk-PIA19400.webp, from "Sunset in Mars' Gale Crater"
+  (PIA19400). Credit: NASA/JPL-Caltech/MSSS/Texas A&M Univ.
+  Both photos are used under the JPL Image Use Policy and NASA's media
+  guidelines. NASA and JPL do not endorse this game.
+- fonts/Orbitron-latin.woff2, the Orbitron font by The Orbitron Project
+  Authors, under the SIL Open Font License 1.1 (fonts/Orbitron-OFL.txt).
+- data/donki-raw/ and data/space-weather.js, solar event records from
+  NASA's DONKI database.

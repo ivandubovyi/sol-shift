@@ -6,11 +6,13 @@ You run a small Mars base for 30 sols. Keep three meters up: life support, power
 
 Made for ages 7 to 12. No account, no download, no server needed.
 
+**Play it:** https://ivandubovyi.github.io/sol-shift/ (30-second self-playing tour: https://ivandubovyi.github.io/sol-shift/?demo=video)
+
 **AI disclosure:** the code in this repository was written by an AI assistant (Claude, by Anthropic) from the team's spec. See [AI-USE.md](AI-USE.md). There are no AI-generated images. The base, crew and ground are CSS or SVG written in code; the mountain and the sunset behind them are two real NASA photos (credits below).
 
 ## How to open it
 
-Double-click `index.html`. That is all.
+Use the link above, or download this repository and double-click `index.html`. That is all.
 
 If your browser blocks local files for some reason, run this in the `sol-shift` folder and open http://localhost:8000:
 
@@ -173,6 +175,7 @@ tools/playtest.js       headless test: robot players run the real engine in Node
 tools/make-space-weather.py   rebuilds data/space-weather.js from data/donki-raw/
 tools/make-backdrops.py       how the two NASA photos were cropped (standard-library Python)
 tools/record-demo.mjs         records the self-playing demo tour as a video (needs Chrome and ffmpeg)
+LICENSE, NOTICE         Apache License 2.0 for the code; NOTICE lists what keeps its own terms
 AI-USE.md               how AI was used, as the Space Apps rules require
 ```
 
@@ -264,3 +267,7 @@ See the comment at the top of `tools/make-space-weather.py` for the two download
 ```
 python3 tools/make-space-weather.py
 ```
+
+## License
+
+The code is under the Apache License 2.0 (see `LICENSE`). The two NASA photos, the Orbitron font and the NASA DONKI data keep their own terms; `NOTICE` lists them.
