@@ -974,6 +974,12 @@
     caption.className = "demo-caption";
     caption.setAttribute("aria-live", "polite");
     document.body.appendChild(caption);
+    // A label that stays on screen for the whole recording. The Space Apps
+    // rules ask for a visible mark on video made with AI ("SI") help.
+    var mark = document.createElement("p");
+    mark.className = "demo-mark";
+    mark.textContent = "Made with SI (AI) assistance";
+    document.body.appendChild(mark);
 
     function say(text) { caption.textContent = text; }
     function choice(index) { return document.querySelectorAll("#choices button")[index]; }
@@ -1061,7 +1067,8 @@
          ["Mars photos from the Curiosity rover: " + day.credit],
          ["and " + dusk.credit],
          ["Sleep facts: Barger et al. 2012, Phoenix Mars Lander team study."],
-         ["Code written with AI help (Claude). No AI-generated images."],
+         ["Code, captions and recording made with AI assistance (Claude). No AI-generated images."],
+         ["NASA data and photos: see Sources."],
          ["NASA and JPL do not endorse this game.", "demo-credits-small"]].forEach(function (line) {
           var p = document.createElement("p");
           p.textContent = line[0];

@@ -1002,7 +1002,7 @@ details[open] .learn-label::before { content: "\2212"; }
   bottom: 0;
   z-index: 40;
   margin: 0;
-  padding: 16px 24px calc(18px + var(--safe-bottom));
+  padding: 14px 24px calc(34px + var(--safe-bottom));   /* room underneath for the corner label */
   text-align: center;
   font-family: var(--font-heavy);
   font-weight: 700;
@@ -1012,9 +1012,26 @@ details[open] .learn-label::before { content: "\2212"; }
   background: rgba(8, 7, 12, 0.86);
   border-top: 1px solid var(--glass-line);
 }
-.demo-video .mood { bottom: 86px; }
-.demo-video #end-screen { padding-bottom: 76px; }          /* keep the report above the captions */
-.demo-video .card { max-height: calc(100% - 32px - 68px); }
+/* The corner label that stays up for the whole recording. */
+.demo-mark {
+  position: fixed;
+  left: 10px;
+  bottom: calc(7px + var(--safe-bottom));
+  z-index: 60;
+  margin: 0;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-family: var(--font-heavy);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.demo-video .mood { bottom: 100px; }
+.demo-video #end-screen { padding-bottom: 90px; }          /* keep the report above the captions */
+.demo-video .card { max-height: calc(100% - 32px - 82px); }
 .btn-choice.demo-press { outline: 3px solid var(--sunset-strong); outline-offset: 2px; box-shadow: 0 0 26px rgba(143, 193, 239, 0.75); }
 .demo-credits {
   position: fixed;

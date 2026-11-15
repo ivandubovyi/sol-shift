@@ -464,6 +464,7 @@ while (!tour.outcome && tourClicks < 500) { E.choose(tour, 0); tourClicks += 1; 
 check(!!tour.outcome && (tour.outcome === "won" || !!data.outcomes[tour.cause]), "tour ends with a mission report (" + tour.outcome + (tour.cause ? ", " + tour.cause : "") + ", sol " + tour.sol + ")");
 check(/(\d+)%/.test(E.getPrompt(E.newGame(data, { seed: 3 })).choices[0].detail), "tour can read the work-day mistake chance from the day card");
 check(uiCode.indexOf('demo === "video"') !== -1, "ui.js has the ?demo=video tour");
+check(uiCode.indexOf("Made with SI (AI) assistance") !== -1, "the demo tour carries the visible AI-assistance label");
 
 console.log("\n" + (failures === 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED"));
 process.exitCode = failures === 0 ? 0 : 1;
