@@ -145,7 +145,7 @@ var SOL_SHIFT_NUMBERS = {
 
   // ---------- THE FATIGUE SWITCH ----------
   // true  = the full game: hidden crew tiredness, body clock drift, bedtime
-  //         choices, short/full/overtime shifts, and the sleep event cards.
+  //         choices, work days and rest days, and the sleep event cards.
   // false = the same game without any of that: three meters, real NASA solar
   //         storms, messages from Earth, and "focus" work plans instead.
   // Everything that depends on it is marked "FATIGUE MODULE" in js/engine.js,
@@ -161,8 +161,8 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   meterStart: {
-    value: 100, unit: "points", kind: "game-design", status: "placeholder", source: null,
-    note: "Every meter starts full."
+    value: 80, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    note: "Every meter starts a little below full, so the first work day visibly fills the bars."
   },
 
   meterMax: {
@@ -207,25 +207,20 @@ var SOL_SHIFT_NUMBERS = {
     note: "Extra life support lost on a sol when power is low."
   },
 
-  // ---------- Work plans for the day phase ----------
-  // hours: how long the crew works. tired: how much tiredness it adds.
+  // ---------- The two plans for the day phase ----------
+  // hours: how long the crew works. tired: how much tiredness it adds
+  // (a minus number means the crew rests).
 
-  workPlanShort: {
-    value: { label: "Short shift", hours: 4, power: 6, lifeSupport: 5, shielding: 2, tired: 8 },
+  workPlanWork: {
+    value: { label: "Work day", hours: 8, power: 15, lifeSupport: 10, shielding: 6, tired: 26 },
     unit: "points", kind: "game-design", status: "placeholder", source: null,
-    note: "Less work, less tiredness."
+    note: "A normal day of work. Fills all three bars and tires the crew."
   },
 
-  workPlanFull: {
-    value: { label: "Full shift", hours: 8, power: 11, lifeSupport: 8, shielding: 3, tired: 15 },
+  workPlanRest: {
+    value: { label: "Rest day", hours: 0, power: 5, lifeSupport: 3, shielding: 0, tired: -22 },
     unit: "points", kind: "game-design", status: "placeholder", source: null,
-    note: "A normal day. Breaks about even."
-  },
-
-  workPlanOvertime: {
-    value: { label: "Overtime", hours: 11, power: 14, lifeSupport: 9, shielding: 4, tired: 26 },
-    unit: "points", kind: "game-design", status: "placeholder", source: null,
-    note: "Gets more done, makes the crew much more tired."
+    note: "The crew rests. The panels and air machines still make a little, but the base uses more than that, so the bars drop. No repairs, so no repair mistakes."
   },
 
   // ---------- Work plans used when fatigueEnabled is false ----------
@@ -264,12 +259,22 @@ var SOL_SHIFT_NUMBERS = {
 
   resetClockTiredness: {
     value: 8, unit: "points", kind: "game-design", status: "placeholder", source: null,
-    note: "Moving the crew's sleep back to match the Sun costs one rough night."
+    note: "Moving the crew's sleep back to match the Sun costs one rough night. The cost is this big when the body clock is far out of step (see clockResetFullMinutes) and smaller when it has slipped only a little. Staying in step costs nothing."
+  },
+
+  clockResetFullMinutes: {
+    value: 80, unit: "minutes", kind: "game-design", status: "placeholder", source: null,
+    note: "At this much drift or more, catching up costs the full rough night."
   },
 
   shelterRest: {
     value: 6, unit: "points of tiredness removed", kind: "game-design", status: "placeholder", source: null,
     note: "A day in the storm shelter is a quiet day, so the crew rests a little."
+  },
+
+  shelterPower: {
+    value: 5, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    note: "The solar panels keep working while the crew is in the shelter, but nobody is outside to clean or fix them, so they make less."
   },
 
   shelterLifeSupport: {
@@ -296,7 +301,7 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   clockMistakeWeight: {
-    value: 0.25, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
+    value: 0.3, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
     note: "How much an out-of-step body clock adds to the mistake chance."
   },
 
@@ -311,29 +316,41 @@ var SOL_SHIFT_NUMBERS = {
   },
 
   mistakeLifeSupportCost: {
-    value: 12, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    value: 15, unit: "points", kind: "game-design", status: "placeholder", source: null,
     note: "Life support lost when a repair goes wrong."
+  },
+
+  // ---------- A gentle start ----------
+
+  gentleSols: {
+    value: 5, unit: "sols", kind: "game-design", status: "placeholder", source: null,
+    note: "No random trouble cards during the first sols, so a new player can learn the bars first. Real solar storms still appear on their dates."
+  },
+
+  safeFirstSol: {
+    value: true, unit: "on or off", kind: "game-design", status: "placeholder", source: null,
+    note: "On sol 1 a repair cannot go wrong, so the first choice can never lose the game."
   },
 
   // ---------- Events ----------
 
   dayEventChance: {
-    value: 0.35, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
+    value: 0.4, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
     note: "Chance of a random event card in a day phase with no solar event."
   },
 
   nightEventChance: {
-    value: 0.3, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
+    value: 0.35, unit: "chance (0 to 1)", kind: "game-design", status: "placeholder", source: null,
     note: "Chance of a random event card in a night phase."
   },
 
   flareShieldingHit: {
-    value: 8, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    value: 5, unit: "points", kind: "game-design", status: "placeholder", source: null,
     note: "Shielding lost if the crew keeps working through an X-class flare day."
   },
 
   particleStormShieldingHit: {
-    value: 25, unit: "points", kind: "game-design", status: "placeholder", source: null,
+    value: 12, unit: "points", kind: "game-design", status: "placeholder", source: null,
     note: "Shielding lost if the crew keeps working through a solar particle storm day."
   },
 

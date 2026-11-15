@@ -69,11 +69,11 @@ function bestEventChoice(game) {
   return scores[0] <= scores[1] ? 0 : 1;
 }
 
-// Careless: always works overtime, never fixes the body clock,
+// Careless: always works and never rests, never fixes the body clock,
 // never hides from solar storms, always picks the first choice.
 function careless(game) {
   var card = game.card;
-  if (card.type === "work") { return game.skipWork ? 0 : 2; }
+  if (card.type === "work") { return 0; }
   if (card.type === "sleep") { return 0; }
   if (card.type === "solar") { return 1; }
   return 0;
@@ -86,16 +86,34 @@ function careful(game) {
   if (card.type === "message") { return 0; }
   if (card.type === "work") {
     if (game.skipWork) { return 0; }
-    if (game.tired >= 45) { return 0; }                                          // short shift
-    if ((m.power < 45 || m.lifeSupport < 45 || m.shielding < 45) && game.tired < 25) { return 2; } // overtime
-    return 1;                                                                     // full shift
+    return game.tired >= 45 ? 1 : 0;   // rest when the crew is tired, otherwise work
   }
-  if (card.type === "sleep") { return game.driftMinutes >= 110 ? 1 : 0; }
+  if (card.type === "sleep") { return 1; }   // sleep by the Sun
   if (card.type === "solar") {
     if (card.solar.kind === "particleStorm") { return 0; }
     return m.shielding < 40 ? 0 : 1;
   }
   return bestEventChoice(game);
+}
+
+// A casual first-time player, modelled as picking any choice at random.
+// (Its own dice, so it does not disturb the game's dice.)
+function randomClicker(seed) {
+  var s = (seed * 2654435761) >>> 0;
+  return function (game) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return Math.floor(s / 4294967296 * E.getPrompt(game).choices.length);
+  };
+}
+
+// A player who always presses the same button: work or rest (a), which
+// bedtime (b), and the first or second choice on every other card (c).
+function alwaysSame(a, b, c) {
+  return function (game) {
+    var type = game.card.type;
+    var pick = type === "work" ? a : (type === "sleep" ? b : c);
+    return Math.min(pick, E.getPrompt(game).choices.length - 1);
+  };
 }
 
 // Careful in every way except one: never moves bedtime to match the Sun.
@@ -243,13 +261,13 @@ function demoBranch(choice) {
   E.choose(g, choice);   // pump fault choice
   E.choose(g, 0);        // bedtime: keep Earth hours
   var p = E.getPrompt(g);
-  return { title: p.title, full: p.choices[1] && p.choices[1].detail, lifeSupport: g.meters.lifeSupport };
+  return { title: p.title, full: p.choices[0] && p.choices[0].detail, lifeSupport: g.meters.lifeSupport };
 }
 var wake = demoBranch(0);
 var wait = demoBranch(1);
-console.log("  wake crew : life support " + wake.lifeSupport + " | next: " + wake.title + " | full shift: " + wake.full);
-console.log("  let sleep : life support " + wait.lifeSupport + " | next: " + wait.title + " | full shift: " + wait.full);
-check(wake.title === "Plan the work day" && wait.title === "Plan the work day", "demo: next morning goes straight to the work plan");
+console.log("  wake crew : life support " + wake.lifeSupport + " | next: " + wake.title + " | work day: " + wake.full);
+console.log("  let sleep : life support " + wait.lifeSupport + " | next: " + wait.title + " | work day: " + wait.full);
+check(wake.title === "Work or rest today?" && wait.title === "Work or rest today?", "demo: next morning goes straight to the work or rest card");
 check(wake.lifeSupport > wait.lifeSupport, "demo: letting the crew sleep costs life support now");
 check(wake.full !== wait.full, "demo: waking the crew changes tomorrow's mistake chance");
 
@@ -261,12 +279,13 @@ check(gl.outcome === "lost" && !!data.outcomes[gl.cause],
 // 6. Balance.
 // ---------------------------------------------------------------------
 var RUNS = 500;
-function summary(gameData, strategy, name) {
+// strategy is a robot, or (with perSeed true) a function that makes one robot per seed.
+function summary(gameData, strategy, name, perSeed) {
   var wins = 0;
   var lossSols = [];
   var causes = {};
   for (var seed = 1; seed <= RUNS; seed++) {
-    var game = play(gameData, strategy, seed);
+    var game = play(gameData, perSeed ? strategy(seed) : strategy, seed);
     if (game.outcome === "won") { wins++; }
     else { lossSols.push(game.sol); causes[game.cause] = (causes[game.cause] || 0) + 1; }
   }
@@ -280,9 +299,58 @@ console.log("\n== Balance, fatigue ON (" + RUNS + " seeds each) ==");
 var bCareful = summary(data, careful, "careful               ");
 var bCareless = summary(data, careless, "careless              ");
 var bNoClock = summary(data, carefulNoClock, "careful, ignores clock");
-check(bCareful.rate >= 0.72 && bCareful.rate <= 0.88, "careful wins about 80% (target 72 to 88%)");
+var bRandom = summary(data, randomClicker, "random clicker        ", true);
+check(bCareful.rate >= 0.85 && bCareful.rate <= 0.98, "careful wins about 90% (accepting 85 to 98%)");
 check(bCareless.rate <= 0.02, "careless almost always loses");
-check(bNoClock.rate >= 0.2 && bNoClock.rate <= 0.4, "careful but ignoring the body clock wins about 25 to 35% (accepting 20 to 40%)");
+check(bRandom.rate >= 0.28 && bRandom.rate <= 0.52, "a casual random clicker wins sometimes (target 30 to 50%, accepting 28 to 52%)");
+check(bNoClock.rate <= bCareful.rate - 0.4, "ignoring the body clock is clearly worse than careful play (at least 40 points lower)");
+console.log("  Always pressing the same buttons (work or rest, bedtime, other cards):");
+[0, 1].forEach(function (a) { [0, 1].forEach(function (b) { [0, 1].forEach(function (c) {
+  summary(data, alwaysSame(a, b, c), "    " + (a ? "rest" : "work") + ", " + (b ? "Sun time  " : "Earth time") + ", choice " + (c + 1) + "       ");
+}); }); });
+
+// The gentle start: no trouble cards in the first sols, and sol 1 cannot go wrong.
+var gentle = data.numbers.gentleSols.value;
+var earlyTrouble = 0;
+var solOneMistakes = 0;
+for (var gs = 1; gs <= 200; gs++) {
+  var gg = E.newGame(data, { seed: gs });
+  var steps = 0;
+  while (!gg.outcome && gg.sol <= gentle && steps < 60) {
+    if (gg.card.type === "event") { earlyTrouble++; }
+    E.choose(gg, careless(gg));
+    steps++;
+  }
+  solOneMistakes += gg.hits.filter(function (h) { return h.sol === 1 && /mistake/i.test(h.reason); }).length;
+}
+check(earlyTrouble === 0, "no trouble cards during the first " + gentle + " sols (200 seeds)");
+check(solOneMistakes === 0, "no repair mistake can happen on sol 1 (200 seeds)");
+var first = E.newGame(data, { seed: 5 });
+var firstPrompt = E.getPrompt(first);
+check(firstPrompt.choices.length === 2 && firstPrompt.choices[0].label === "Work day" && firstPrompt.choices[1].label === "Rest day",
+  "the day card has two choices: " + firstPrompt.choices.map(function (c) { return c.label; }).join(", "));
+var before1 = Object.assign({}, first.meters);
+E.choose(first, 0);
+check(E.METERS.every(function (k) { return first.meters[k] > before1[k]; }), "the first work day raises all three bars: " + JSON.stringify(first.meters));
+
+// Every choice on every card has a plain-words line (no numbers) for the buttons.
+var noPlain = [];
+var numbersInPlain = [];
+for (var ps = 1; ps <= 40; ps++) {
+  var pg = E.newGame(data, { seed: ps });
+  var pick = randomClicker(ps);
+  var turns = 0;
+  while (!pg.outcome && turns < 400) {
+    E.getPrompt(pg).choices.forEach(function (c) {
+      if (!c.plain || !c.plain.length) { noPlain.push(E.getPrompt(pg).title + " / " + c.label); }
+      (c.plain || []).forEach(function (part) { if (/\d/.test(part.text.replace("All 3 bars", ""))) { numbersInPlain.push(part.text); } });
+    });
+    E.choose(pg, pick(pg));
+    turns++;
+  }
+}
+check(noPlain.length === 0, "every choice has a plain-words line " + JSON.stringify(noPlain.slice(0, 3)));
+check(numbersInPlain.length === 0, "plain-words lines carry no numbers " + JSON.stringify(numbersInPlain.slice(0, 3)));
 
 // ---------------------------------------------------------------------
 // 7. Fatigue switched off.
@@ -385,7 +453,7 @@ var tour = E.newGame(data, { seed: 3 });
 var tourClicks = 0;
 while (!tour.outcome && !(tour.card && tour.card.type === "solar") && tourClicks < 500) {
   var tp = E.getPrompt(tour);
-  E.choose(tour, Math.min(tp.kind === "work" || tp.kind === "sleep" ? 1 : 0, tp.choices.length - 1));
+  E.choose(tour, Math.min(tp.kind === "sleep" ? 1 : 0, tp.choices.length - 1));
   tourClicks += 1;
 }
 check(tour.card && tour.card.type === "solar" && tour.sol <= 6, "tour reaches a real solar event quickly (sol " + tour.sol + ": " + E.getPrompt(tour).title + ")");
@@ -394,7 +462,7 @@ check(E.getPrompt(tour).title === "Shelter day", "tour: choosing the shelter lea
 tourClicks = 0;
 while (!tour.outcome && tourClicks < 500) { E.choose(tour, 0); tourClicks += 1; }
 check(!!tour.outcome && (tour.outcome === "won" || !!data.outcomes[tour.cause]), "tour ends with a mission report (" + tour.outcome + (tour.cause ? ", " + tour.cause : "") + ", sol " + tour.sol + ")");
-check(/(\d+)%/.test(E.getPrompt(E.newGame(data, { seed: 3 })).choices[1].detail), "tour can read the full-shift mistake chance from the work card");
+check(/(\d+)%/.test(E.getPrompt(E.newGame(data, { seed: 3 })).choices[0].detail), "tour can read the work-day mistake chance from the day card");
 check(uiCode.indexOf('demo === "video"') !== -1, "ui.js has the ?demo=video tour");
 
 console.log("\n" + (failures === 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED"));

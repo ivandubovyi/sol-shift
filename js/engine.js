@@ -148,6 +148,23 @@ var SolShiftEngine = (function () {
     return parts;
   }
 
+  // The same effects in plain words for the choice buttons, with no numbers.
+  // Each item is { icon, sign, text }: sign "+" is good news, "-" is bad news.
+  // The web page draws the icon; the exact numbers stay in "detail".
+  function plainEffects(game, effects) {
+    var parts = [];
+    if (!effects) { return parts; }
+    METERS.forEach(function (meter) {
+      if (effects[meter] > 0) { parts.push({ icon: meter, sign: "+", text: METER_NAMES[meter] }); }
+      if (effects[meter] < 0) { parts.push({ icon: meter, sign: "-", text: METER_NAMES[meter] }); }
+    });
+    if (fatigueOn(game)) { // FATIGUE MODULE
+      if (effects.tired > 0) { parts.push({ icon: "tired", sign: "-", text: "Crew more tired" }); }
+      if (effects.tired < 0) { parts.push({ icon: "rest", sign: "+", text: "Rest" }); }
+    }
+    return parts;
+  }
+
   // How far the crew's body clock is from the Sun, from 0 (in step) to 1 (fully out of step).
   function outOfStep(game) {
     return clamp(game.driftMinutes / num(game, "fullyOutOfStepMinutes"), 0, 1);
@@ -170,6 +187,7 @@ var SolShiftEngine = (function () {
 
   // Roll the dice for a repair. Returns true if it went wrong.
   function rollRepair(game, hours, reason) {
+    if (game.sol === 1 && num(game, "safeFirstSol")) { return false; }   // the first sol can never go wrong
     var chance = mistakeChance(game, hours);
     if (nextRandom(game) < chance) {
       changeMeter(game, "lifeSupport", -num(game, "mistakeLifeSupportCost"), reason);
@@ -246,6 +264,7 @@ var SolShiftEngine = (function () {
   // Pick a random event for this phase, or null.
   function pickRandomEvent(game, phase) {
     var chanceKey = phase === "day" ? "dayEventChance" : "nightEventChance";
+    if (game.sol <= num(game, "gentleSols")) { return null; }   // a gentle start: no trouble cards yet
     if (nextRandom(game) >= num(game, chanceKey)) { return null; }
 
     // Which events are allowed right now?
@@ -433,16 +452,17 @@ var SolShiftEngine = (function () {
   // What the player sees: the current card turned into words and buttons
   // ---------------------------------------------------------------------
 
-  // The three work plans the player can pick from.
-  // FATIGUE MODULE: with fatigue on, the plans are about HOW LONG to work
-  // (longer = more done, more tired). With fatigue off, they are about WHAT
-  // to work on, because longer shifts would have no cost.
+  // The plans the player can pick from for the day.
+  // FATIGUE MODULE: with fatigue on there are two: a work day (fills the
+  // bars, tires the crew) or a rest day (rests the crew, the bars drop).
+  // With fatigue off, they are about WHAT to work on, because rest would
+  // have no use.
   // A real fact shown on the evening card (backed by marsSunsetBlue in numbers.js).
   var SUNSET_LEARN = "On Mars, the sky near the setting Sun turns blue. Fine dust in the air lets blue light through more easily than other colors.";
 
   function workPlans(game) {
     if (fatigueOn(game)) {
-      return [num(game, "workPlanShort"), num(game, "workPlanFull"), num(game, "workPlanOvertime")];
+      return [num(game, "workPlanWork"), num(game, "workPlanRest")];
     }
     return [num(game, "focusPlanGreenhouse"), num(game, "focusPlanPanels"), num(game, "focusPlanShield")]
       .map(function (plan) { return Object.assign({ hours: 8, tired: 0 }, plan); });
@@ -459,25 +479,42 @@ var SolShiftEngine = (function () {
         return {
           kind: "work", clock: "08:00", title: "Shelter day",
           text: "The crew stays inside the storm shelter. They can tend the indoor greenhouse, but nobody goes outside, so nobody takes in extra radiation.",
-          choices: [{ label: "Wait out the storm", detail: "Life support +" + num(game, "shelterLifeSupport") + " from indoor work. No outside work, so no power or shielding gets made. The crew rests a little." }]
+          choices: [{
+            label: "Wait out the storm",
+            plain: [{ icon: "lifeSupport", sign: "+", text: "Life support" }].concat(fatigueOn(game) ? [{ icon: "rest", sign: "+", text: "Rest" }] : []),
+            detail: "Life support +" + num(game, "shelterLifeSupport") + " from indoor work, Power +" + num(game, "shelterPower") + " from the panels. No outside work, so no shielding gets made. The crew rests a little."
+          }]
         };
       }
       return {
-        kind: "work", clock: "08:00", title: "Plan the work day",
+        kind: "work", clock: "08:00", title: fatigueOn(game) ? "Work or rest today?" : "Plan the work day",
         text: fatigueOn(game)
-          ? "How long should the crew work today? More work keeps the base running. It also makes the crew more tired."
+          ? "Work fills the bars. Rest helps a tired crew."
           : "What should the crew work on today? Each job helps one part of the base the most.",
         choices: workPlans(game).map(function (plan) {
-          var output = workOutput(game);
-          var parts = describeEffects(game, {
+          var output = plan.hours > 0 ? workOutput(game) : 1;   // a rest day's small upkeep does not depend on the crew
+          var made = {
             power: Math.round(plan.power * output),
             lifeSupport: Math.round(plan.lifeSupport * output),
             shielding: Math.round(plan.shielding * output)
-          });
-          return {
-            label: fatigueOn(game) ? plan.label + " (" + plan.hours + " hours)" : plan.label,
-            detail: "Makes " + parts.join(", ") + ". Chance of a repair mistake: " + percent(mistakeChance(game, plan.hours)) + "."
           };
+          var parts = describeEffects(game, made);
+          var plain;
+          var detail = "Makes " + parts.join(", ") + ". ";
+          if (!fatigueOn(game)) {
+            plain = plainEffects(game, made);
+            detail += "Chance of a repair mistake: " + percent(mistakeChance(game, plan.hours)) + ".";
+          } else if (plan.hours > 0) {
+            plain = [{ icon: "all", sign: "+", text: "All 3 bars" },
+              crewStatus(game).level >= 2
+                ? { icon: "tired", sign: "-", text: "Tired crew: mistakes likely" }
+                : { icon: "tired", sign: "-", text: "Crew more tired" }];
+            detail += "Chance of a repair mistake: " + percent(game.sol === 1 && num(game, "safeFirstSol") ? 0 : mistakeChance(game, plan.hours)) + ".";
+          } else {
+            plain = [{ icon: "rest", sign: "+", text: "Rest" }, { icon: "all", sign: "-", text: "Bars drop a little" }];
+            detail += "No repairs today, so no repair mistakes. The base still uses air and power.";
+          }
+          return { label: plan.label, plain: plain, detail: detail };
         })
       };
     }
@@ -489,19 +526,33 @@ var SolShiftEngine = (function () {
           kind: "sleep", clock: "Evening", title: "Night",
           text: "The Sun has set and the crew goes to sleep. Mars nights are very cold, so the heaters use power.",
           learn: SUNSET_LEARN, factKey: "marsSunsetBlue",
-          choices: [{ label: "Good night", detail: "Power -" + num(game, "nightPowerUse") + " for the heaters." }]
+          choices: [{ label: "Good night", plain: [{ icon: "power", sign: "-", text: "Power" }], detail: "Power -" + num(game, "nightPowerUse") + " for the heaters." }]
         };
       }
       var drift = num(game, "solDriftMinutes");
       return {
         kind: "sleep", clock: "Evening", title: "Bedtime",
         learn: SUNSET_LEARN, factKey: "marsSunsetBlue",
-        text: "A Mars day (a sol) is about 40 minutes longer than an Earth day. If the crew keeps Earth hours, their body clocks slip away from the Sun, and they sleep worse. " + (game.driftMinutes < 1
-          ? "Right now their body clocks match the Sun."
-          : "Right now they are " + formatMinutes(game.driftMinutes) + " out of step."),
+        text: "A Mars day is about 40 minutes longer than an Earth day. Which clock should the crew sleep by?" + (game.driftMinutes < 1
+          ? ""
+          : " Their body clocks are " + formatMinutes(game.driftMinutes) + " off the Sun."),
         choices: [
-          { label: "Keep Earth hours", detail: "Body clock slips " + Math.round(drift) + " more minutes. No cost tonight." },
-          { label: "Shift bedtime to match the Sun", detail: "Body clock back in step. One rough night: the crew gets more tired tonight." }
+          {
+            label: "Stay on Earth time",
+            plain: [{ icon: "rest", sign: "+", text: "Easy night" }, { icon: "clock", sign: "-", text: "Body clock slips" }],
+            detail: "Body clock slips " + Math.round(drift) + " more minutes. No cost tonight. A crew out of step sleeps worse and makes more mistakes."
+          },
+          game.driftMinutes < 1
+            ? {
+              label: "Sleep by the Sun",
+              plain: [{ icon: "clock", sign: "+", text: "Body clock stays in step" }],
+              detail: "The body clock stays in step with the Sun. No cost."
+            }
+            : {
+              label: "Sleep by the Sun",
+              plain: [{ icon: "clock", sign: "+", text: "Body clock back in step" }, { icon: "tired", sign: "-", text: "One rough night" }],
+              detail: "Body clock back in step. One rough night: the crew gets more tired tonight (more the further it had slipped)."
+            }
         ]
       };
     }
@@ -511,7 +562,7 @@ var SolShiftEngine = (function () {
         kind: "message", clock: null, title: card.title,
         text: card.text,
         note: "You asked on sol " + card.sentSol + ". Each message takes 4 to 24 minutes to cross space, and mission control needed time to work out the answer.",
-        choices: [{ label: "Do what Earth says", detail: describeEffects(game, card.effects).join(", ") || "No meter changes." }]
+        choices: [{ label: "Do what Earth says", plain: plainEffects(game, card.effects), detail: describeEffects(game, card.effects).join(", ") || "No meter changes." }]
       };
     }
 
@@ -523,8 +574,16 @@ var SolShiftEngine = (function () {
         note: "Real event from a NASA DONKI snapshot (May 2024, not live). Putting it over a Mars base is part of the game.",
         sourceLink: card.solar.link,
         choices: [
-          { label: card.template.shelterLabel, detail: "Only indoor work today. No power or shielding gets made." },
-          { label: card.template.workLabel, detail: "Shielding -" + hit + ". The work day goes on as normal." }
+          {
+            label: card.template.shelterLabel,
+            plain: [{ icon: "shielding", sign: "+", text: "Crew stays safe" }, { icon: "all", sign: "-", text: "No outside work today" }],
+            detail: "Only indoor work today. A little power and life support, no shielding."
+          },
+          {
+            label: card.template.workLabel,
+            plain: [{ icon: "shielding", sign: "-", text: "Shielding" }, { icon: "all", sign: "+", text: "A normal day" }],
+            detail: "Shielding -" + hit + ". The day goes on as normal."
+          }
         ]
       };
     }
@@ -536,10 +595,21 @@ var SolShiftEngine = (function () {
       learn: card.learn, factKey: card.factKey,
       choices: ev.choices.map(function (c) {
         var parts = describeEffects(game, c.effects);
-        if (c.repair) { parts.push("Repair now: " + percent(mistakeChance(game, 8)) + " chance of a mistake (Life support -" + num(game, "mistakeLifeSupportCost") + ")"); }
-        if (c.extraRiskTomorrow) { parts.push("Tomorrow's repair mistake chance +" + percent(c.extraRiskTomorrow)); }
-        if (c.askEarth) { parts.push("Earth's answer comes in about " + num(game, "earthReplyPhases") / 2 + " sol"); }
-        return { label: c.label, detail: parts.join(". ") + "." };
+        var plain = plainEffects(game, c.effects);
+        if (c.repair) {
+          parts.push("Repair now: " + percent(mistakeChance(game, 8)) + " chance of a mistake (Life support -" + num(game, "mistakeLifeSupportCost") + ")");
+          plain.push({ icon: "risk", sign: "-", text: "Repair could go wrong" });
+        }
+        if (c.extraRiskTomorrow) {
+          parts.push("Tomorrow's repair mistake chance +" + percent(c.extraRiskTomorrow));
+          plain.push({ icon: "risk", sign: "-", text: "More mistakes tomorrow" });
+        }
+        if (c.skipWork) { plain.push({ icon: "all", sign: "-", text: "No outside work today" }); }
+        if (c.askEarth) {
+          parts.push("Earth's answer comes in about " + num(game, "earthReplyPhases") / 2 + " sol");
+          plain.push({ icon: "earth", sign: "+", text: "Earth sends help later" });
+        }
+        return { label: c.label, plain: plain, detail: parts.join(". ") + "." };
       })
     };
   }
@@ -613,13 +683,15 @@ var SolShiftEngine = (function () {
     if (game.skipWork) {
       changeTired(game, -num(game, "shelterRest"));
       changeMeter(game, "lifeSupport", num(game, "shelterLifeSupport"), "");
+      changeMeter(game, "power", num(game, "shelterPower"), "");
       addLog(game, "A quiet day in the shelter. The crew tended the indoor greenhouse.");
     } else {
       var plan = workPlans(game)[index];
       // Roll for a mistake BEFORE the crew gets more tired: the chance shown on the button is the one used.
-      var wentWrong = rollRepair(game, plan.hours, "Repair mistake on a " + plan.label.toLowerCase());
+      // A rest day (0 hours) has no repairs, so nothing can go wrong.
+      var wentWrong = plan.hours > 0 && rollRepair(game, plan.hours, "Repair mistake on a " + plan.label.toLowerCase());
       // A tired crew gets less done. output = 1 means full work, 0.6 means 60 percent.
-      var output = workOutput(game);
+      var output = plan.hours > 0 ? workOutput(game) : 1;
       changeMeter(game, "power", Math.round(plan.power * output), "");
       changeMeter(game, "lifeSupport", Math.round(plan.lifeSupport * output), "");
       changeMeter(game, "shielding", Math.round(plan.shielding * output), "");
@@ -649,9 +721,11 @@ var SolShiftEngine = (function () {
     }
     if (index === 0) {
       game.driftMinutes += num(game, "solDriftMinutes");
-    } else {
+    } else if (game.driftMinutes >= 1) {
+      // Catching up costs a rough night: the full cost when far out of step, less when only a little.
+      var share = clamp(game.driftMinutes / num(game, "clockResetFullMinutes"), 0, 1);
       game.driftMinutes = 0;
-      changeTired(game, num(game, "resetClockTiredness"));
+      changeTired(game, num(game, "resetClockTiredness") * share);
       addLog(game, "Bedtime moved to match the Sun. A rough night, but the body clock is back in step.");
     }
     // Sleep. Out-of-step crews get less rest (the Phoenix study number).
