@@ -82,3 +82,10 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 
 - The crew sleep angle in Sol Shift was proposed by Spark, one of the AI assistants (Claude), in the brainstorming described under "What AI did". The team lead picked the project.
 - Nov 14, 2026: the team lead asked the Philadelphia Local Lead at the 2 PM mentor check-in whether an AI-suggested angle (crew sleep) was allowed under the SI rule, and was told it is allowed.
+
+## Milestone 9 (Nov 15, 2026)
+
+- **Demo video.** An AI assistant (Claude) added a tour that plays by itself at `index.html?demo=video`, and recorded the 30-second demo video from it with `tools/record-demo.mjs` (headless Chrome and ffmpeg). The tour presses the game's real buttons and uses the real rules; the numbers in its captions are read from the game. The captions and the credits card were written by the AI assistant. Nobody appears in the video, it has no sound, and it was not edited after recording.
+- **Small fix.** The "Sol 4" title on wide screens was partly hidden behind the meters after the font change. It now sits clear of them.
+- **Publishing check.** Before the repository was made public, the AI assistant searched it for passwords, keys, private folder paths and personal details. It found no passwords, keys or private paths. The only key in the code is NASA's public `DEMO_KEY` in a download example.
+- **Game rules unchanged.** No balance numbers were changed.

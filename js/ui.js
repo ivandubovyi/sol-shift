@@ -19,6 +19,8 @@
 
   Useful web addresses (for testing and for the demo video):
     index.html?demo=pump    start right at the 3 a.m. pump fault
+    index.html?demo=video   plays a 30-second tour by itself, with captions
+                            (used to record the demo video, see the end of this file)
     index.html?seed=123     the same seed always plays the same game
 */
 
@@ -798,17 +800,143 @@
     document.addEventListener("fullscreenchange", function () { updateFullscreenLabels(); updateCamera(); });
   }
 
+  // ---------------------------------------------------------------------
+  // Demo video (index.html?demo=video): the game plays a short tour by
+  // itself, with captions, so it can be recorded. About 30 seconds.
+  // It presses the real buttons and uses the real rules. Nothing here
+  // changes how the game plays for a person.
+  // ---------------------------------------------------------------------
+
+  // Play the current game forward without drawing, until stop(game) is true.
+  // pick(prompt) says which choice to press each time.
+  function fastForward(pick, stop) {
+    var guard = 0;
+    while (!game.outcome && !stop(game) && guard < 500) {
+      var prompt = E.getPrompt(game);
+      E.choose(game, Math.min(pick(prompt), prompt.choices.length - 1));
+      guard += 1;
+    }
+    lastMeters = null;   // no "+5" pop-ups for the part nobody saw
+    render();
+  }
+
+  function runDemoVideo() {
+    document.body.classList.add("demo-video");
+    var caption = document.createElement("p");
+    caption.className = "demo-caption";
+    caption.setAttribute("aria-live", "polite");
+    document.body.appendChild(caption);
+
+    function say(text) { caption.textContent = text; }
+    function choice(index) { return document.querySelectorAll("#choices button")[index]; }
+    // Light up a choice for a moment, then press it, so a viewer sees which one was picked.
+    // after() runs right after the press.
+    function press(index, after) {
+      var button = choice(index);
+      if (!button) { return; }
+      button.classList.add("demo-press");
+      window.setTimeout(function () {
+        button.click();
+        if (document.activeElement) { document.activeElement.blur(); }
+        if (after) { after(); }
+      }, 450);
+    }
+    // After the pump fault comes the bedtime card. The tour skips past it
+    // (keeping Earth hours) to the next morning, where the result shows.
+    function skipToMorning() {
+      E.choose(game, 0);
+      render();
+    }
+    // The chance of a repair mistake on a full shift, read from the card on screen.
+    function fullShiftMistake() {
+      var found = /(\d+)%/.exec(E.getPrompt(game).choices[1].detail);
+      return found ? found[1] + "%" : "higher";
+    }
+
+    var sw = DATA.spaceWeather;
+    var day = SolShiftScene.BACKDROP.day;
+    var dusk = SolShiftScene.BACKDROP.dusk;
+
+    // The tour: [seconds from the start, what to do].
+    var steps = [
+      [0, function () { say("Sol Shift: a game about living on Mars time."); }],
+      [2.2, function () {
+        startGame({ seed: 3 });
+        say("Each sol, you plan the crew's work. Every choice costs something.");
+      }],
+      [5.0, function () { press(1); }],   // Full shift
+      [5.5, function () { say("A Mars day is about 40 minutes longer than an Earth day, so body clocks drift."); }],
+      [8.4, function () {
+        startGame({ seed: 3, demo: "pump" });
+        say("3 a.m. The air pump stops. Way 1: wake the crew and fix it now.");
+      }],
+      [10.6, function () {
+        press(0, function () {
+          skipToMorning();
+          say("Next morning: a full shift now has a " + fullShiftMistake() + " chance of a repair mistake.");
+        });
+      }],
+      [13.6, function () {
+        startGame({ seed: 3, demo: "pump" });
+        say("Way 2: let them sleep and fix it at sunrise.");
+      }],
+      [15.4, function () {
+        press(1, function () {
+          skipToMorning();
+          say("Next morning: only " + fullShiftMistake() + ". But life support fell to " + game.meters.lifeSupport + ".");
+        });
+      }],
+      [18.2, function () {
+        startGame({ seed: 3 });
+        fastForward(
+          function (prompt) { return prompt.kind === "work" || prompt.kind === "sleep" ? 1 : 0; },
+          function (g) { return g.card && g.card.type === "solar"; }
+        );
+        say("The solar storms are real: NASA DONKI records from May 2024 (saved, not live).");
+      }],
+      [21.4, function () { press(0); }],   // Everyone into the storm shelter
+      [21.9, function () { say("Shelter the crew and lose a work day, or keep working and lose shielding."); }],
+      [24.0, function () {
+        fastForward(function () { return 0; }, function () { return false; });
+        say("Run out of air, power or shielding and the mission ends early. The report shows why.");
+      }],
+      [26.2, function () {
+        caption.hidden = true;
+        var credits = document.createElement("div");
+        credits.className = "glass demo-credits";
+        [["Sol Shift", "demo-credits-title"],
+         ["Solar storms: NASA DONKI, " + E.prettyDate(sw.firstDate) + " to " + E.prettyDate(sw.lastDate) + " (saved snapshot)."],
+         ["Mars photos from the Curiosity rover: " + day.credit],
+         ["and " + dusk.credit],
+         ["Sleep facts: Barger et al. 2012, Phoenix Mars Lander team study."],
+         ["Code written with AI help (Claude). No AI-generated images."],
+         ["NASA and JPL do not endorse this game.", "demo-credits-small"]].forEach(function (line) {
+          var p = document.createElement("p");
+          p.textContent = line[0];
+          if (line[1]) { p.className = line[1]; }
+          credits.appendChild(p);
+        });
+        document.body.appendChild(credits);
+      }],
+      [30, function () { document.body.setAttribute("data-demo-done", "yes"); }]
+    ];
+    steps.forEach(function (step) { window.setTimeout(step[1], step[0] * 1000); });
+  }
+
   // The picture starts with the title look.
   showTitleScene();
   updateCamera();
 
   // What to show first:
   //   ?demo=pump      straight into the pump fault (no intro, for the demo video)
+  //   ?demo=video     the 30-second tour that plays by itself
   //   ?seed=...       the start screen (no intro, for testing and recording)
   //   first visit     the How to play intro
   //   later visits    the start screen
   if (demo === "pump") {
     startGame({ seed: seedOption(), demo: "pump" });
+  } else if (demo === "video") {
+    runDemoVideo();
   } else if (seedParam === null && !SolShiftIntro.wasSeen()) {
     openIntro();
   }

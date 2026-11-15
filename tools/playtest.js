@@ -377,5 +377,25 @@ check(fs.existsSync(path.join(root, "fonts/Orbitron-latin.woff2")) && fs.existsS
   "the Orbitron font and its license file are in the project");
 check(!/https?:\/\/fonts\.g/.test(pageCode + fs.readFileSync(path.join(root, "css/style.css"), "utf8")), "no font is fetched from the internet");
 
+// ---------------------------------------------------------------------
+// 10. The demo video tour (index.html?demo=video) plays the real game.
+// ---------------------------------------------------------------------
+console.log("\n== Demo video tour ==");
+var tour = E.newGame(data, { seed: 3 });
+var tourClicks = 0;
+while (!tour.outcome && !(tour.card && tour.card.type === "solar") && tourClicks < 500) {
+  var tp = E.getPrompt(tour);
+  E.choose(tour, Math.min(tp.kind === "work" || tp.kind === "sleep" ? 1 : 0, tp.choices.length - 1));
+  tourClicks += 1;
+}
+check(tour.card && tour.card.type === "solar" && tour.sol <= 6, "tour reaches a real solar event quickly (sol " + tour.sol + ": " + E.getPrompt(tour).title + ")");
+E.choose(tour, 0);
+check(E.getPrompt(tour).title === "Shelter day", "tour: choosing the shelter leads to: " + E.getPrompt(tour).title);
+tourClicks = 0;
+while (!tour.outcome && tourClicks < 500) { E.choose(tour, 0); tourClicks += 1; }
+check(!!tour.outcome && (tour.outcome === "won" || !!data.outcomes[tour.cause]), "tour ends with a mission report (" + tour.outcome + (tour.cause ? ", " + tour.cause : "") + ", sol " + tour.sol + ")");
+check(/(\d+)%/.test(E.getPrompt(E.newGame(data, { seed: 3 })).choices[1].detail), "tour can read the full-shift mistake chance from the work card");
+check(uiCode.indexOf('demo === "video"') !== -1, "ui.js has the ?demo=video tour");
+
 console.log("\n" + (failures === 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED"));
 process.exitCode = failures === 0 ? 0 : 1;

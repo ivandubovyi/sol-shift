@@ -172,6 +172,7 @@ data/donki-raw/         the full, unedited DONKI responses the snapshot came fro
 tools/playtest.js       headless test: robot players run the real engine in Node
 tools/make-space-weather.py   rebuilds data/space-weather.js from data/donki-raw/
 tools/make-backdrops.py       how the two NASA photos were cropped (standard-library Python)
+tools/record-demo.mjs         records the self-playing demo tour as a video (needs Chrome and ffmpeg)
 AI-USE.md               how AI was used, as the Space Apps rules require
 ```
 
@@ -249,6 +250,12 @@ The robot players are simple rule-following bots written in `tools/playtest.js`,
 | Careless (fatigue off) | 0/500 (0%) | 10 |
 
 Targets were: careful about 80%, careless almost always loses around sol 10, careful-but-ignores-the-clock 25 to 35%. Real players will differ from robots, so these numbers are a starting point for playtesting with people.
+
+## The demo video
+
+Open `index.html?demo=video` and the game plays a 30-second tour by itself, with captions: the title, one work day, the evening card, the 3 a.m. pump fault played both ways (with the next morning's result of each), a real solar flare from the DONKI snapshot, a mission report, and a credits card. It presses the real buttons and uses the real rules with seed 3, so the numbers in the captions are read from the game, not typed in. The tour's steps are at the end of `js/ui.js`.
+
+The submitted video was recorded from that page with `tools/record-demo.mjs` (headless Chrome and ffmpeg, 1280x720, no sound). Nobody appears in it and it was not edited afterward.
 
 ## Rebuilding the space weather snapshot
 
