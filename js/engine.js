@@ -533,24 +533,24 @@ var SolShiftEngine = (function () {
       return {
         kind: "sleep", clock: "Evening", title: "Bedtime",
         learn: SUNSET_LEARN, factKey: "marsSunsetBlue",
-        text: "A Mars day is about 40 minutes longer than an Earth day. Which clock should the crew sleep by?" + (game.driftMinutes < 1
+        text: "A Mars day is about 40 minutes longer than an Earth day. Which clock should the crew's bodies follow?" + (game.driftMinutes < 1
           ? ""
           : " Their body clocks are " + formatMinutes(game.driftMinutes) + " off the Sun."),
         choices: [
           {
             label: "Stay on Earth time",
-            plain: [{ icon: "rest", sign: "+", text: "Easy night" }, { icon: "clock", sign: "-", text: "Body clock slips" }],
+            plain: [{ icon: "rest", sign: "+", text: "Easy night" }, { icon: "clock", sign: "-", text: "Clock slips" }],
             detail: "Body clock slips " + Math.round(drift) + " more minutes. No cost tonight. A crew out of step sleeps worse and makes more mistakes."
           },
           game.driftMinutes < 1
             ? {
               label: "Sleep by the Sun",
-              plain: [{ icon: "clock", sign: "+", text: "Body clock stays in step" }],
+              plain: [{ icon: "clock", sign: "+", text: "Clock stays in step" }],
               detail: "The body clock stays in step with the Sun. No cost."
             }
             : {
               label: "Sleep by the Sun",
-              plain: [{ icon: "clock", sign: "+", text: "Body clock back in step" }, { icon: "tired", sign: "-", text: "One rough night" }],
+              plain: [{ icon: "clock", sign: "+", text: "Clock back in step" }, { icon: "tired", sign: "-", text: "One rough night" }],
               detail: "Body clock back in step. One rough night: the crew gets more tired tonight (more the further it had slipped)."
             }
         ]
@@ -561,7 +561,7 @@ var SolShiftEngine = (function () {
       return {
         kind: "message", clock: null, title: card.title,
         text: card.text,
-        note: "You asked on sol " + card.sentSol + ". Each message takes 4 to 24 minutes to cross space, and mission control needed time to work out the answer.",
+        note: "You asked on sol " + card.sentSol + ". A message takes 4 to 24 minutes to cross space, and mission control needed time to answer.",
         choices: [{ label: "Do what Earth says", plain: plainEffects(game, card.effects), detail: describeEffects(game, card.effects).join(", ") || "No meter changes." }]
       };
     }
@@ -571,7 +571,7 @@ var SolShiftEngine = (function () {
       return {
         kind: "solar", clock: card.clock, title: card.title, text: card.text,
         learn: card.learn, factKey: card.factKey,
-        note: "Real event from a NASA DONKI snapshot (May 2024, not live). Putting it over a Mars base is part of the game.",
+        note: "A real NASA record (DONKI, May 2024, saved, not live). Putting it over a Mars base is part of the game.",
         sourceLink: card.solar.link,
         choices: [
           {

@@ -29,16 +29,22 @@ Useful web addresses:
 | `index.html?seed=42` | The same seed always plays the same game. Good for testing and for recording. |
 | `index.html?demo=pump&seed=42` | Both together. |
 
-## How to play intro
+## A first sol that teaches itself
 
-The first time someone opens the game, three short "How to play" screens come before the start screen: what a sol is, the three meters and the goal, and how choices work. Every screen has Next and Skip, and Escape also skips. The keyboard focus moves to each screen's heading.
+The first real playtest (Nov 15, 2026) found the game "really confusing as a player playing for the 1st time". So the game now explains itself while you play, instead of asking you to read first:
+
+- **One goal, always in view.** "Keep all 3 bars above zero for 30 sols" is on the start screen and under the bars.
+- **One decision per card.** A title, one or two short sentences and big choice buttons. Each choice says what it does in plain words with small icons, like "+ All 3 bars" and "Crew more tired". "Show the numbers" (off until you press it) adds the exact numbers and chances. "Real science" is folded until you open it.
+- **Work or rest.** The day card has two choices: a Work day fills the bars and tires the crew; a Rest day rests the crew and the bars drop a little.
+- **One-time tips.** A new player gets a short tip at the top of the card the first time something matters: the goal, the crew, a tired crew, a slipped body clock, a solar storm, asking Earth, a low bar. The thing the tip is about lights up. During the first two sols each bar has a tiny caption ("From solar panels"). Tips are remembered in the browser (`localStorage`) and do not come back on replay. `index.html?tips=1` shows them again.
+- **A gentle start.** No random trouble cards in the first 5 sols, and nothing can go wrong on sol 1. Real solar storms still arrive on their dates.
+- **Less on screen.** The crew chip appears on the first evening. The body-clock line appears only once the clock has slipped. The mission log drawer is gone; the end screen still shows what used a bar up.
+- **Cause and effect.** After every choice a "+11" or "-6" pops up on each bar that changed.
+
+"How to play" (start screen and Menu) still opens three short screens for anyone who wants them. Every screen has Next and Skip, and Escape also skips.
 
 - The words are in `data/intro.js`; the code that shows them is `js/intro.js`.
-- The game remembers that the intro was seen (in `localStorage`). If the browser blocks that, the intro just shows again next time.
-- "How to play" on the start screen and in the footer (also during a game) opens it again.
-- `?demo=pump` and `?seed=` skip it, so recordings start straight away.
 - Lines with real facts point at verified entries in `data/numbers.js` and show the source link. The tired-crew line has `fatigueOnly: true`, so it disappears when the fatigue switch is off.
-- To see the intro again on your own computer as a first-time visitor, clear the site data or run `localStorage.removeItem("solShift.introSeen")` in the browser console.
 
 ## Full screen and glass
 
@@ -46,7 +52,7 @@ The outpost scene fills the whole screen; the page never scrolls. Everything els
 
 - **Phones held upright:** sol and Menu at the top, the three meters in a glass bar under them, the crew chip below that, and the card as a bottom sheet. The camera (`updateCamera()` in `js/ui.js`) keeps the habitat between the top bar and the sheet.
 - **Wide screens and phones on their side:** meters top-left, crew chip bottom-left, the card as a panel on the right. Short screens put the meters in one row.
-- **Menu:** Mission log (a glass drawer), How to play, Sources, Sound, and Full screen. The Full screen button only appears where the browser supports it (not on iPhone Safari), and the game never needs it.
+- **Menu:** Resume, How to play, Sound, Full screen and Sources. The Full screen button only appears where the browser supports it (not on iPhone Safari), and the game never needs it.
 - **Type:** labels and numbers use `--font-hud`, which is Orbitron, a free font under the SIL Open Font License (`fonts/Orbitron-latin.woff2`, license in `fonts/Orbitron-OFL.txt`, from Google Fonts). The file is inside the project, so nothing is fetched from the internet and the game works offline. If the file is missing, a monospace system font is used. Event text uses the plain system face so young players can read it.
 - **Contrast:** the worst case is the brightest day sky during a solar flare flash. Measured over it, glass text is at least 4.5:1 (see the milestone 5 report in AI-USE.md for the numbers).
 
@@ -97,8 +103,8 @@ The end screen is a mission report: a stamp, the sol reached, a chart of the thr
 
 ## How a sol works
 
-1. **Day.** Sometimes a card appears first: a real solar event from the NASA data, a random event, or an answer from Earth. Then you plan the work day: short shift, full shift or overtime. More work makes more power, life support and shielding, and makes the crew more tired. Each plan shows its chance of a repair mistake.
-2. **Night.** Sometimes a night card appears (like the 3 a.m. pump fault). Then bedtime: keep Earth hours (the body clock slips 40 minutes) or shift bedtime to match the Sun (one rough night).
+1. **Day.** Sometimes a card appears first: a real solar event from the NASA data, a random event (from sol 6 on), or an answer from Earth. Then: work or rest? A Work day makes power, life support and shielding and tires the crew. A Rest day rests the crew; the panels and air machines still make a little, but the base uses more, so the bars drop. With "Show the numbers" on, the Work day shows its chance of a repair mistake.
+2. **Night.** Sometimes a night card appears (like the 3 a.m. pump fault). Then bedtime: stay on Earth time (easy tonight, the body clock slips 40 minutes) or sleep by the Sun (free while the clock is in step; one rough night to catch up after it has slipped).
 3. Next sol. Survive sol 30 to win. If a meter hits 0, the mission ends and the end screen shows what used it up and the real science behind it.
 
 ## The event deck
@@ -242,21 +248,25 @@ It:
 
 It prints `ALL CHECKS PASSED` or the failures.
 
-The robot players are simple rule-following bots written in `tools/playtest.js`, not people. Balance was tuned by changing game-design numbers in `data/numbers.js` and re-running the test until the results matched the targets. Results on 2026-11-15 (500 games each, seeds 1 to 500):
+The robot players are simple rule-following bots written in `tools/playtest.js`, not people. Balance was tuned by changing game-design numbers in `data/numbers.js` and re-running the test until the results matched the targets. After the first playtest the game was made gentler for casual play. Results on 2026-11-15 (500 games each, seeds 1 to 500):
 
 | Robot player | Wins | Median losing sol |
 |---|---|---|
-| Careful (fatigue on) | 412/500 (82%) | 28 |
-| Careless: always overtime, never shelters, never fixes the body clock | 0/500 (0%) | 11 |
-| Careful, but never fixes the body clock | 147/500 (29%) | 27 |
-| Careful (fatigue off) | 482/500 (96%) | 30 |
-| Careless (fatigue off) | 0/500 (0%) | 10 |
+| Careful: rests a tired crew, sleeps by the Sun, shelters from big storms | 477/500 (95%) | 29 |
+| Random clicker: any button, like a first-time player trying things | 173/500 (35%) | 23 |
+| Careful, but always stays on Earth time | 138/500 (28%) | 25 |
+| Careless: always works, Earth time, never shelters, first button | 0/500 (0%) | 17 |
+| Always the same buttons: work, sleep by the Sun, first button | 395/500 (79%) | 27 |
+| Always the same buttons: work, Earth time, first button | 16/500 (3%) | 24 |
+| Always rests (any other buttons) | 0/500 (0%) | 11 to 15 |
+| Careful (fatigue off) | 477/500 (95%) | 29 |
+| Careless (fatigue off) | 0/500 (0%) | 11 |
 
-Targets were: careful about 80%, careless almost always loses around sol 10, careful-but-ignores-the-clock 25 to 35%. Real players will differ from robots, so these numbers are a starting point for playtesting with people.
+Targets were: careful about 90%, a casual player wins sometimes (30 to 50%), careless never, and ignoring the body clock clearly worse than careful play. No robot loses before sol 10. Real players will differ from robots, so these numbers are a starting point for playtesting with people.
 
 ## The demo video
 
-Open `index.html?demo=video` and the game plays a 30-second tour by itself, with captions: the title, one work day, the evening card, the 3 a.m. pump fault played both ways (with the next morning's result of each), a real solar flare from the DONKI snapshot, a mission report, and a credits card. It presses the real buttons and uses the real rules with seed 3, so the numbers in the captions are read from the game, not typed in. The tour's steps are at the end of `js/ui.js`.
+Open `index.html?demo=video` and the game plays a 30-second tour by itself, with captions: the title, the work-or-rest card, the evening card, the 3 a.m. pump fault played both ways (with the next morning's result of each), a real solar flare from the DONKI snapshot, a mission report, and a credits card. It presses the real buttons and uses the real rules with seed 3, so the numbers in the captions are read from the game, not typed in. The tour's steps are at the end of `js/ui.js`.
 
 The submitted video was recorded from that page with `tools/record-demo.mjs` (headless Chrome and ffmpeg, 1280x720, no sound). Nobody appears in it and it was not edited afterward.
 

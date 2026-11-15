@@ -91,3 +91,18 @@ The NASA Space Apps rules allow AI ("SI") tools but ask teams to say how they we
 - **Game rules unchanged.** No balance numbers were changed.
 - **Going public.** The team lead approved publishing on Nov 15, 2026 and chose the account, a public repository, GitHub Pages and the Apache License 2.0. The AI assistant added `LICENSE` (the standard text, from GitHub's license list), `NOTICE` and this note, and published the repository at https://github.com/ivandubovyi/sol-shift with the game at https://ivandubovyi.github.io/sol-shift/.
 - **Names removed.** At the team lead's request, the AI assistant replaced the team lead's first name with "the team lead" in every file and commit message, and re-signed every commit as "Sol Shift team", before publishing. Commit dates and the code in each commit were not changed.
+
+## Milestone 10 (Nov 15, 2026)
+
+- **Why.** The team lead played the game and said: "it's really confusing as a player playing for the 1st time. the menu in the sol is overwhelming. the game itself is overwhelming and not clear". This milestone is the answer to that playtest. The goal was set by the team's planning assistant (AI): a 7-year-old, or a judge opening it cold, should understand what to do on every screen without reading a paragraph.
+- **What the AI assistant (Claude) changed.**
+  - One goal in view at all times: "Keep all 3 bars above zero for 30 sols".
+  - The day card has two choices (Work day or Rest day) instead of three shifts with stat lines.
+  - Every choice shows its result in plain words with small icons. The exact numbers are behind "Show the numbers", off by default. "Real science" is folded by default.
+  - One-time tips in the first sol replace the three intro screens as the way a new player learns. The intro screens are still under "How to play".
+  - The menu is Resume, How to play, Sound, Full screen, Sources. The mission log drawer was removed. The crew chip and the body-clock line appear only when they matter.
+  - A gentle start: no random trouble cards in the first 5 sols, and no repair mistake on sol 1.
+  - Shorter words on the solar storm, message, work and bedtime cards. The real facts and their sources were kept.
+- **Balance was changed on purpose this time.** All balance numbers are still marked "game-design" in `data/numbers.js`. New results from `tools/playtest.js` (500 games each): careful 95%, random clicker 35%, careful but always on Earth time 28%, careless 0%. Before this milestone no simple click-through player ever won.
+- **What stayed.** The NASA data and every citation, the fatigue switch, `?demo=pump`, and all the checks (now more of them).
+- **Demo video.** Recorded again from `index.html?demo=video` with the new screens.

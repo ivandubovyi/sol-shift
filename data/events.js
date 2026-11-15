@@ -663,10 +663,10 @@ var SOL_SHIFT_SOLAR_CARDS = {
   flare: {
     clock: "08:00",
     title: "Solar flare warning",
-    text: "NASA's space weather records show a class {classType} solar flare on {date}, peaking at {time} UTC. A solar flare is a sudden burst of energy from the Sun. X is the strongest class.",
+    text: "A real solar flare: class {classType} on {date}, from NASA's records. A flare is a sudden burst of energy from the Sun.",
     learn: "Radiation is invisible energy that can harm the body. A radiation dose is how much of it a body takes in, measured in millisieverts. On calm days, the Curiosity rover measured about 0.67 millisieverts a day on the surface of Mars.",
     factKey: "surfaceDoseMsvPerDay",
-    shelterLabel: "Everyone into the storm shelter today",
+    shelterLabel: "Go to the storm shelter",
     workLabel: "Keep working outside",
     hitKey: "flareShieldingHit"
   },
@@ -674,10 +674,10 @@ var SOL_SHIFT_SOLAR_CARDS = {
   particleStorm: {
     clock: "08:00",
     title: "Solar particle storm",
-    text: "NASA's space weather records show a solar energetic particle event on {date} at {time} UTC. That is a storm of very fast particles thrown out by the Sun.",
+    text: "A real solar particle storm on {date}, from NASA's records: very fast particles thrown out by the Sun.",
     learn: "Radiation is invisible energy that can harm the body. A radiation dose is how much of it a body takes in, measured in millisieverts. On calm days, the Curiosity rover measured about 0.67 millisieverts a day on the surface of Mars. In this game, solar storms add extra dose on top of that.",
     factKey: "surfaceDoseMsvPerDay",
-    shelterLabel: "Everyone into the storm shelter today",
+    shelterLabel: "Go to the storm shelter",
     workLabel: "Keep working outside",
     hitKey: "particleStormShieldingHit"
   }

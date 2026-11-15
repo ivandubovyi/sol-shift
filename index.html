@@ -34,7 +34,6 @@
     <svg id="scene" class="scene" focusable="false"></svg>
     <div class="sol-title" id="sol-title" aria-hidden="true">
       <span class="sol-title-num" id="sol-title-num"></span>
-      <span class="sol-title-sub" id="sol-title-sub"></span>
     </div>
   </div>
 
@@ -44,7 +43,7 @@
     <section id="start-screen" class="screen title-screen" aria-labelledby="game-title">
       <div class="title-head">
         <h1 class="game-title" id="game-title">Sol Shift</h1>
-        <p class="title-sub">Keep the crew alive for 30 sols</p>
+        <p class="title-sub">Keep all 3 bars above zero for 30 sols</p>
       </div>
       <div class="title-actions">
         <button class="btn btn-primary btn-big" id="start-button" type="button">Start sol 1</button>
@@ -100,12 +99,20 @@
       <!-- The card the player must answer: a side panel on wide screens,
            a bottom sheet on phones -->
       <article class="glass card" id="card" aria-live="polite">
+        <!-- A one-time tip for new players (js/ui.js decides when) -->
+        <div class="coach" id="coach" hidden>
+          <span class="coach-tag hud-label">Tip</span>
+          <p id="coach-text"></p>
+          <button class="coach-ok" id="coach-ok" type="button">Got it</button>
+        </div>
         <p class="card-clock hud-label" id="card-clock"></p>
         <h2 class="card-title" id="card-title"></h2>
         <p id="card-text" class="card-text"></p>
         <div class="choices" id="choices"></div>
+        <!-- The exact numbers are hidden until the player asks for them -->
+        <button class="numbers-toggle" id="numbers-toggle" type="button" aria-pressed="false">Show the numbers</button>
         <p class="card-note" id="card-note" hidden></p>
-        <!-- Real science: open on wide screens, folded on phones -->
+        <!-- Real science: folded until the player opens it -->
         <details class="learn" id="card-learn" hidden>
           <summary class="learn-label">Real science</summary>
           <p id="card-learn-text"></p>
@@ -115,20 +122,11 @@
 
       <!-- Menu (opens from the Menu button) -->
       <div class="glass menu" id="menu" hidden>
-        <button class="glass-link" type="button" id="log-button" aria-expanded="false" aria-controls="log-drawer">Mission log</button>
+        <button class="glass-link" type="button" id="resume-button">Resume</button>
         <button class="glass-link" type="button" data-open-intro>How to play</button>
-        <button class="glass-link" type="button" data-open-sources>Sources</button>
         <button class="glass-link" type="button" id="sound-button" aria-pressed="false">Sound off</button>
         <button class="glass-link" type="button" data-fullscreen hidden>Full screen</button>
-      </div>
-
-      <!-- Mission log drawer -->
-      <div class="glass drawer" id="log-drawer" hidden>
-        <div class="drawer-head">
-          <h2 class="hud-label">Mission log</h2>
-          <button class="glass-link" type="button" id="log-close">Close</button>
-        </div>
-        <ol class="log" id="log"></ol>
+        <button class="glass-link" type="button" data-open-sources>Sources</button>
       </div>
     </section>
 

@@ -6,7 +6,7 @@
 
   The rules live in js/engine.js. This file only:
     1. starts a game when the player presses Start
-    2. draws the meters, the crew, the card and the log
+    2. draws the meters, the crew and the card
     3. tells the outpost picture (js/scene.js) what to show
     4. calls SolShiftEngine.choose() when a choice button is pressed
     5. shows the end screen (the mission report) and the sources screen
@@ -22,6 +22,7 @@
     index.html?demo=video   plays a 30-second tour by itself, with captions
                             (used to record the demo video, see the end of this file)
     index.html?seed=123     the same seed always plays the same game
+    index.html?tips=1       show the first-time tips again (for testing)
 */
 
 (function () {
@@ -47,6 +48,7 @@
   var lastTitleSol = null;   // the sol whose title card was shown last
   var lastMeters = null;     // meter values at the last redraw, to show "+5" or "-12"
   var lastCardKey = "";      // to play the card entrance and sounds once per new card
+  var firstGame = false;     // true while a new player's very first game is running
 
   // Does this person want less motion? (A setting in their computer.)
   var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -58,6 +60,7 @@
   var params = new URLSearchParams(window.location.search);
   var demo = params.get("demo");
   var seedParam = params.get("seed");
+  var tipsParam = params.get("tips");
 
   // ---------------------------------------------------------------------
   // Screens
@@ -69,7 +72,6 @@
     SCREENS.forEach(function (s) { $(s).hidden = (s !== id); });
     currentScreen = id;
     closeMenu();
-    closeLog();
     if (id !== "game-screen") { document.body.classList.remove("is-night"); }
     document.body.setAttribute("data-screen", id);
     // Before a game starts, the picture is the base at night (the title look).
@@ -133,6 +135,9 @@
       fy = 0.5;
     }
 
+    // Phones: the crew chip sits just under the meters, however tall they are.
+    $("crew-panel").style.top = side ? "" : ($("meters").getBoundingClientRect().bottom + 8) + "px";
+
     var scale = w / units;      // screen pixels per scene unit
     var viewW = units;
     var viewH = h / scale;
@@ -150,6 +155,10 @@
     lastTitleSol = null;
     lastMeters = null;
     lastCardKey = "";
+    currentTip = null;
+    tipQueue = [];
+    // A new player's first game shows a short caption under each bar for the first sols.
+    firstGame = tipsOn && !tipSeen("bars");
     buildGauges();
     showScreen("game-screen");
     render();
@@ -166,7 +175,7 @@
     renderCrew();
     renderScene();
     renderCard();
-    renderLog();
+    renderTips();
     showSolTitle();
     updateCamera();   // the card height may have changed
   }
@@ -186,6 +195,13 @@
     power: "Electricity from solar panels",
     shielding: "Protection from radiation"
   };
+  // Very short captions shown under each bar during a new player's first sols.
+  var GAUGE_TIP = {
+    lifeSupport: "Air, water, food",
+    power: "From solar panels",
+    shielding: "Blocks radiation"
+  };
+  var GOAL = "Goal: keep all 3 bars above zero for 30 sols";
 
   // A small drawn icon for each gauge (SVG paths written by hand).
   var GAUGE_ICONS = {
@@ -210,17 +226,27 @@
           '<div class="gauge-bar" role="meter" aria-valuemin="0"><div class="gauge-fill"></div></div>' +
         '</div>' +
         '<div class="gauge-help visually-hidden"></div>' +
+        '<div class="gauge-tip" aria-hidden="true"></div>' +
         '<span class="gauge-delta" aria-hidden="true"></span>';
       row.querySelector(".gauge-name").textContent = E.METER_NAMES[key];
       row.querySelector(".gauge-help").textContent = GAUGE_HELP[key];
+      row.querySelector(".gauge-tip").textContent = GAUGE_TIP[key];
       row.querySelector(".gauge-bar").setAttribute("aria-label", E.METER_NAMES[key]);
       box.appendChild(row);
     });
+    // The goal, always in view.
+    var goal = document.createElement("p");
+    goal.className = "goal-line";
+    goal.textContent = GOAL;
+    box.appendChild(goal);
   }
 
   function renderMeters() {
     var low = DATA.numbers.lowMeterWarning.value;
     var max = DATA.numbers.meterMax.value;
+    // First game: captions under the bars for the first two sols, then never again.
+    if (firstGame && game.sol > 2) { firstGame = false; markTipSeen("bars"); }
+    document.body.classList.toggle("learning", firstGame);
 
     E.METERS.forEach(function (key) {
       var value = game.meters[key];
@@ -258,18 +284,20 @@
 
   function renderCrew() {
     // FATIGUE MODULE: no crew mood when the sleep part of the game is switched off.
-    $("crew-panel").hidden = !E.fatigueOn(game);
-    if (!E.fatigueOn(game)) { return; }
+    // The crew chip stays out of the way until the first evening, when it first matters.
+    var showCrew = E.fatigueOn(game) && game.phaseCount >= 1;
+    $("crew-panel").hidden = !showCrew;
+    if (!showCrew) { return; }
     var status = E.crewStatus(game);
     drawFace($("crew-face"), status.level);
     $("crew-face").setAttribute("aria-label", status.text);
     $("crew-text").textContent = MOOD_SHORT[status.level];
     $("crew-panel").setAttribute("data-level", status.level);
 
+    // The body-clock line only shows once the clock has slipped.
     var drift = game.driftMinutes;
-    $("clock-text").textContent = drift < 1
-      ? "Body clock in step with the Sun"
-      : "Body clock " + E.formatMinutes(drift) + " off the Sun";
+    $("clock-text").hidden = drift < 1;
+    $("clock-text").textContent = drift < 1 ? "" : "Body clock " + E.formatMinutes(drift) + " off the Sun";
   }
 
   // Draw a simple face. level 0 = rested, 3 = exhausted.
@@ -405,7 +433,6 @@
     lastTitleSol = game.sol;
     var box = $("sol-title");
     $("sol-title-num").textContent = "Sol " + game.sol;
-    $("sol-title-sub").textContent = "Space weather replay: " + E.prettyDate(E.dateForSol(game, game.sol));
     box.classList.remove("show");
     void box.offsetWidth;
     box.classList.add("show");
@@ -427,10 +454,10 @@
     var key = game.sol + "/" + game.phaseCount + "/" + prompt.title;
     if (key !== lastCardKey) {
       lastCardKey = key;
-      // "Real science" starts open on wide screens and folded on phones,
-      // so on a phone the choices fit on one screen. It stays a real
-      // <details>, so anyone can open it (and reach the source link).
-      $("card-learn").open = window.matchMedia("(min-width: 900px)").matches;
+      // "Real science" starts folded, so the card is the title, a short
+      // text and the choices. It stays a real <details>, so anyone can
+      // open it (and reach the source link).
+      $("card-learn").open = false;
       $("card").classList.add("card-enter");
       if (game.card && game.card.type === "event" && game.phase === "night") { SolShiftSound.play("alarm"); }
       if (prompt.kind === "message") { SolShiftSound.play("message"); }
@@ -466,12 +493,16 @@
       var label = document.createElement("span");
       label.className = "choice-label";
       label.textContent = choice.label;
+      // The result in plain words with small icons, then (hidden until
+      // "Show the numbers" is on) the exact numbers.
       var detail = document.createElement("span");
       detail.className = "choice-detail";
       detail.textContent = choice.detail;
       btn.appendChild(label);
+      btn.appendChild(makePlainLine(choice.plain || []));
       btn.appendChild(detail);
       btn.addEventListener("click", function () {
+        dismissTip();
         // Remember how this choice changes the picture (events.js "scene").
         if (game.card && game.card.type === "event") { rememberScene(game.card.event.choices[index]); }
         SolShiftSound.play("choice");
@@ -488,19 +519,147 @@
     });
   }
 
-  function renderLog() {
-    var list = $("log");
-    list.textContent = "";
-    game.log.slice(0, 8).forEach(function (entry) {
-      var li = document.createElement("li");
-      var tag = document.createElement("span");
-      tag.className = "log-tag";
-      tag.textContent = "Sol " + entry.sol + (entry.phase === "night" ? ", night" : "");
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(entry.text));
-      list.appendChild(li);
+  // Small drawn icons for the plain-words line (SVG paths written by hand).
+  var FX_ICONS = {
+    lifeSupport: GAUGE_ICONS.lifeSupport,
+    power: GAUGE_ICONS.power,
+    shielding: GAUGE_ICONS.shielding,
+    all: "M4 20V11h4v9zM10 20V4h4v16zM16 20v-6h4v6z",                                    // three bars
+    rest: "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z",                         // a moon
+    tired: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zM7 10h4v1.6H7zm6 0h4v1.6h-4zm-3.5 5h5v1.6h-5z",   // a sleepy face
+    clock: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-1 3h2v5.3l3.4 2-1 1.7L11 13.4z",                // a clock
+    risk: "M12 3 2 20h20zm-1 6h2v6h-2zm0 7.5h2v2h-2z",                                    // a warning sign
+    earth: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-8 7h16v2H4zm7-7h2v16h-2z"                        // a globe
+  };
+
+  // One line of small pills like "+ Power" and "Crew more tired".
+  // Good news has a "+", bad news a "-" (never color alone).
+  function makePlainLine(parts) {
+    var line = document.createElement("span");
+    line.className = "fx-row";
+    parts.forEach(function (part) {
+      var pill = document.createElement("span");
+      pill.className = "fx " + (part.sign === "+" ? "fx-good" : "fx-bad") + " fx-" + part.icon;
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("class", "fx-icon");
+      svg.setAttribute("aria-hidden", "true");
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", FX_ICONS[part.icon] || FX_ICONS.all);
+      path.setAttribute("fill-rule", "evenodd");
+      svg.appendChild(path);
+      pill.appendChild(svg);
+      var sign = document.createElement("span");
+      sign.className = "fx-sign";
+      sign.textContent = part.sign === "+" ? "+" : "\u2212";   // a real minus sign
+      pill.appendChild(sign);
+      pill.appendChild(document.createTextNode(part.text));
+      line.appendChild(pill);
     });
+    return line;
   }
+
+  // "Show the numbers": off by default, remembered if the browser allows it.
+  var NUMBERS_KEY = "solShiftShowNumbers";
+  function setShowNumbers(on, remember) {
+    document.body.classList.toggle("show-numbers", on);
+    $("numbers-toggle").setAttribute("aria-pressed", on ? "true" : "false");
+    $("numbers-toggle").textContent = on ? "Hide the numbers" : "Show the numbers";
+    if (remember) { try { window.localStorage.setItem(NUMBERS_KEY, on ? "1" : "0"); } catch (e) { /* not allowed: fine */ } }
+    if (game && currentScreen === "game-screen") { updateCamera(); }
+  }
+  $("numbers-toggle").addEventListener("click", function () {
+    setShowNumbers(!document.body.classList.contains("show-numbers"), true);
+  });
+  try { setShowNumbers(window.localStorage.getItem(NUMBERS_KEY) === "1", false); } catch (e) { /* not allowed: stays off */ }
+
+  // ---------------------------------------------------------------------
+  // First-time tips. Each tip shows once, ever (remembered in the browser),
+  // at the top of the card, and lights up the thing it talks about.
+  // They never show in the demo modes. index.html?tips=1 shows them again.
+  // ---------------------------------------------------------------------
+
+  var TIPS = {
+    goal: { text: "Keep all 3 bars above zero for 30 sols. A Work day fills them. Try it.", target: "meters" },
+    crew: { text: "This is your crew. Tired crews make mistakes. Rest and sleep fix that.", target: "crew-panel" },
+    tired: { text: "The crew is getting tired. A Rest day helps.", target: "crew-panel" },
+    clock: { text: "The crew's body clock is off the Sun, so they sleep worse. Sleep by the Sun to fix it.", target: "crew-panel" },
+    solar: { text: "This solar storm really happened. The shelter keeps the crew safe, but nobody works outside.", target: "gauge-shielding" },
+    earth: { text: "Asking Earth is safe but slow. The answer comes later.", target: null },
+    low: { text: "A bar is low. If any bar reaches zero, the mission ends.", target: "meters" }
+  };
+  var TIPS_KEY = "solShiftTipsSeen";
+  var tipsOn = !demo;                // never in the demo modes
+  var forceTips = tipsParam === "1"; // show every tip again, and do not remember them
+  var tipsSeenNow = {};              // tips shown since the page loaded
+  var tipQueue = [];
+  var currentTip = null;
+
+  function savedTips() {
+    try { return JSON.parse(window.localStorage.getItem(TIPS_KEY) || "{}") || {}; }
+    catch (e) { return {}; }
+  }
+  function tipSeen(id) {
+    if (tipsSeenNow[id]) { return true; }
+    return !forceTips && savedTips()[id] === 1;
+  }
+  function markTipSeen(id) {
+    tipsSeenNow[id] = true;
+    if (forceTips) { return; }
+    try {
+      var all = savedTips();
+      all[id] = 1;
+      window.localStorage.setItem(TIPS_KEY, JSON.stringify(all));
+    } catch (e) { /* the browser will not remember: the tip may show again next visit */ }
+  }
+  function wantTip(id) {
+    if (!tipsOn || tipSeen(id) || currentTip === id || tipQueue.indexOf(id) !== -1) { return; }
+    tipQueue.push(id);
+  }
+  function clearTipTarget() {
+    document.querySelectorAll(".coach-target").forEach(function (el) { el.classList.remove("coach-target"); });
+  }
+  function dismissTip() {
+    currentTip = null;
+    $("coach").hidden = true;
+    clearTipTarget();
+  }
+
+  // Look at the game and decide which tips are due; show one at a time.
+  function renderTips() {
+    if (!tipsOn || !game || game.outcome) { dismissTip(); return; }
+    var card = game.card;
+    var type = card ? card.type : null;
+    if (game.phaseCount === 0 && type === "work") { wantTip("goal"); }
+    if (E.fatigueOn(game)) {
+      if (game.phaseCount >= 1) { wantTip("crew"); }
+      if (type === "work" && !game.skipWork && E.crewStatus(game).level >= 1) { wantTip("tired"); }
+      if (type === "sleep" && game.driftMinutes >= 80) { wantTip("clock"); }
+    }
+    if (type === "solar") { wantTip("solar"); }
+    if (type === "event" && card.event.choices.some(function (c) { return c.askEarth; })) { wantTip("earth"); }
+    var low = DATA.numbers.lowMeterWarning.value;
+    if (E.METERS.some(function (k) { return game.meters[k] < low; })) { wantTip("low"); }
+
+    if (!currentTip && tipQueue.length) {
+      currentTip = tipQueue.shift();
+      markTipSeen(currentTip);
+    }
+    clearTipTarget();
+    $("coach").hidden = !currentTip;
+    if (currentTip) {
+      $("coach-text").textContent = TIPS[currentTip].text;
+      var target = TIPS[currentTip].target && $(TIPS[currentTip].target);
+      if (target && !target.hidden) { target.classList.add("coach-target"); }
+    }
+  }
+  $("coach-ok").addEventListener("click", function () {
+    dismissTip();
+    renderTips();
+    updateCamera();
+    var first = document.querySelector("#choices button");
+    if (first) { first.focus({ preventScroll: true }); }
+  });
 
   // ---------------------------------------------------------------------
   // Sources: only VERIFIED numbers get a link. Anything else says so.
@@ -738,7 +897,7 @@
   });
 
   // ---------------------------------------------------------------------
-  // Menu, mission log drawer and full screen
+  // Menu and full screen
   // ---------------------------------------------------------------------
 
   function closeMenu() {
@@ -746,10 +905,6 @@
     $("menu-button").setAttribute("aria-expanded", "false");
   }
 
-  function closeLog() {
-    $("log-drawer").hidden = true;
-    $("log-button").setAttribute("aria-expanded", "false");
-  }
 
   $("menu-button").addEventListener("click", function () {
     var open = $("menu").hidden;
@@ -758,23 +913,15 @@
     if (open) { $("menu").querySelector("button").focus(); }
   });
 
-  $("log-button").addEventListener("click", function () {
+  $("resume-button").addEventListener("click", function () {
     closeMenu();
-    $("log-drawer").hidden = false;
-    this.setAttribute("aria-expanded", "true");
-    $("log-close").focus();
-  });
-
-  $("log-close").addEventListener("click", function () {
-    closeLog();
     $("menu-button").focus();
   });
 
-  // Escape closes the menu and the log (the intro handles its own Escape).
+  // Escape closes the menu (the intro handles its own Escape).
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") { return; }
     if (!$("menu").hidden) { closeMenu(); $("menu-button").focus(); }
-    if (!$("log-drawer").hidden) { closeLog(); $("menu-button").focus(); }
   });
 
   // Clicking outside the menu closes it.
@@ -822,6 +969,7 @@
 
   function runDemoVideo() {
     document.body.classList.add("demo-video");
+    setShowNumbers(false, false);
     var caption = document.createElement("p");
     caption.className = "demo-caption";
     caption.setAttribute("aria-live", "polite");
@@ -847,9 +995,9 @@
       E.choose(game, 0);
       render();
     }
-    // The chance of a repair mistake on a full shift, read from the card on screen.
+    // The chance of a repair mistake on a work day, read from the card on screen.
     function fullShiftMistake() {
-      var found = /(\d+)%/.exec(E.getPrompt(game).choices[1].detail);
+      var found = /(\d+)%/.exec(E.getPrompt(game).choices[0].detail);
       return found ? found[1] + "%" : "higher";
     }
 
@@ -862,9 +1010,9 @@
       [0, function () { say("Sol Shift: a game about living on Mars time."); }],
       [2.2, function () {
         startGame({ seed: 3 });
-        say("Each sol, you plan the crew's work. Every choice costs something.");
+        say("Each sol: work or rest. Every choice has a cost.");
       }],
-      [5.0, function () { press(1); }],   // Full shift
+      [5.0, function () { press(0); }],   // Work day
       [5.5, function () { say("A Mars day is about 40 minutes longer than an Earth day, so body clocks drift."); }],
       [8.4, function () {
         startGame({ seed: 3, demo: "pump" });
@@ -873,28 +1021,32 @@
       [10.6, function () {
         press(0, function () {
           skipToMorning();
-          say("Next morning: a full shift now has a " + fullShiftMistake() + " chance of a repair mistake.");
+          setShowNumbers(true, false);   // show the exact numbers for this comparison
+          say("Next morning: a work day now has a " + fullShiftMistake() + " chance of a repair mistake.");
         });
       }],
       [13.6, function () {
+        setShowNumbers(false, false);
         startGame({ seed: 3, demo: "pump" });
         say("Way 2: let them sleep and fix it at sunrise.");
       }],
       [15.4, function () {
         press(1, function () {
           skipToMorning();
+          setShowNumbers(true, false);
           say("Next morning: only " + fullShiftMistake() + ". But life support fell to " + game.meters.lifeSupport + ".");
         });
       }],
       [18.2, function () {
+        setShowNumbers(false, false);
         startGame({ seed: 3 });
         fastForward(
-          function (prompt) { return prompt.kind === "work" || prompt.kind === "sleep" ? 1 : 0; },
+          function (prompt) { return prompt.kind === "sleep" ? 1 : 0; },
           function (g) { return g.card && g.card.type === "solar"; }
         );
         say("The solar storms are real: NASA DONKI records from May 2024 (saved, not live).");
       }],
-      [21.4, function () { press(0); }],   // Everyone into the storm shelter
+      [21.4, function () { press(0); }],   // Go to the storm shelter
       [21.9, function () { say("Shelter the crew and lose a work day, or keep working and lose shielding."); }],
       [24.0, function () {
         fastForward(function () { return 0; }, function () { return false; });
@@ -930,14 +1082,11 @@
   // What to show first:
   //   ?demo=pump      straight into the pump fault (no intro, for the demo video)
   //   ?demo=video     the 30-second tour that plays by itself
-  //   ?seed=...       the start screen (no intro, for testing and recording)
-  //   first visit     the How to play intro
-  //   later visits    the start screen
+  //   anything else   the start screen. A new player learns from the tips
+  //                   in the first sol; "How to play" is there if wanted.
   if (demo === "pump") {
     startGame({ seed: seedOption(), demo: "pump" });
   } else if (demo === "video") {
     runDemoVideo();
-  } else if (seedParam === null && !SolShiftIntro.wasSeen()) {
-    openIntro();
   }
 })();
